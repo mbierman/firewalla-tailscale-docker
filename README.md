@@ -12,6 +12,8 @@ Firealla has both:
 
 So _why tailscale_? Firealla VPN Server requires a public IP. Many ISPs are no longer giving public IPs (at least not IPv4 IPs). Without that it is difficult to set up a VPN. Tailscale allows you to connect home even if you don't have a public IP. Tailscale [free tier]([url](https://tailscale.com/pricing)) with some limits.
 
+Problem solved!
+
 ## ✨ Features
 
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
