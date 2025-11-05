@@ -12,12 +12,13 @@ This project provides a set of bash scripts to easily install and uninstall Tail
 
 ## 📝 Prerequisites
 
-*   A Firewalla device (Gold, etc.) with SSH access enabled.
+*   A Firewalla device (only test Gold series for now).
 *   An active Tailscale account.
 *   A Tailscale Auth Key. You can generate a reusable one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation](https://tailscale.com/kb/1085/auth-keys/).
 
 ## 🚀 Installation
 
+[SSH to your firewalla. ](https://help.firewalla.com/hc/en-us/articles/115004397274-How-to-access-Firewalla-using-SSH)
 To install Tailscale on your Firewalla, SSH into your Firewalla device and run the following command:
 
 ```bash
