@@ -24,8 +24,8 @@ Problem solved!
 
 ## 📝 Prerequisites
 
-*   A Firewalla device (only test Gold series for now).
-*   An active Tailscale account.
+*   A Firewalla device (only tested on Gold series for now).
+*   An active [Tailscale account](https://login.tailscale.com/start).
 *   A Tailscale Auth Key. You can generate a reusable one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation](https://tailscale.com/kb/1085/auth-keys/).
 
 ## 🚀 Installation
@@ -74,4 +74,4 @@ The installer script automates the process described in the [official Tailscale 
 *   [Reddit: Easy Tailscale integration via docker compose](https://www.reddit.com/r/firewalla/comments/1mlrtvi/easy_tailscale_integration_via_docker_compose/) (Credit to u/adrianmihalko for the original concept)
 
 ---
-Made with 🔥 and ❤️  for the Firewalla Community!
+Made with 🔥 and ❤️  for the Firewalla Community! Not associated with or supported by Firewalla. 
