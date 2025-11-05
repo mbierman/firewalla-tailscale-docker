@@ -10,7 +10,7 @@ Firealla has:
 * **[VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server):** allows you to access devices on your Firewalla-network when you are away.
 * **[VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client):** allows your Firealla to connect to another VPN server so your devices don't have to. Want to run your Apple TV through a VPN? just assign it to the VPN client.
 
-So _why tailscale_? Firealla VPN Server requires a public IP. Many ISPs are no longer giving public IPs (at least not IPv4 IPs). Without that it is difficult to set up a VPN. Tailscale allows you to connect home even if you don't have a public IP. Tailscale [free tier]([url](https://tailscale.com/pricing)) with some limits.
+So _why tailscale_? Firealla VPN Server requires a public IP. Many ISPs are no longer giving public IPs or charge for them. Without that it is difficult to set up a VPN. Tailscale allows you to connect home even if you don't have a public IP. Tailscale [free tier]([url](https://tailscale.com/pricing)) with some limits.
 
 Problem solved!
 
