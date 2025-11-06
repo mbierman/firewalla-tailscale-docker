@@ -124,6 +124,8 @@ The `uninstall.sh` script also supports the `-t` and `-c` flags.
 
 ## 💡 How It Works
 
+Magic. 
+
 The installer script automates the process described in the [official Tailscale documentation for running in Docker](https://tailscale.com/kb/1282/docker). It detects your local networks and interactively helps you build the correct `--advertise-routes` and `--advertise-exit-node` arguments. It also includes the `--accept-dns=true` argument by default to allow Tailscale to manage DNS for your tailnet.
 
 ## 📚 References
