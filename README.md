@@ -23,7 +23,7 @@ Bottom line: Tailscale provides a unified, always-on private network that just w
  Tailscale [free tier](https://tailscale.com/pricing) with some limits. Problem solved!
 
 
-## ✨ Features
+## ✨ Features of this script
 
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
 *   **Automatic Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
