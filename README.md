@@ -61,9 +61,7 @@ The script is interactive and will guide you through the following steps:
 
 1.  Enter your **Tailscale Auth Key:** You will be prompted to enter your auth key. [[tailscale docs](https://tailscale.com/kb/1085/auth-keys/)]
 2.  Choose **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
-3.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node.
-4. ** Configuring an Exit Node** An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN.
-
+3.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node. An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN. This isn't needed if you just want to access your devices remotely. 
 
 Based on your answers, the script will automatically create your `docker-compose.yml` file, pull the container image, and start Tailscale for you. It will persist reboots and firewalla updates but not if you flash your firewalla. 
 
