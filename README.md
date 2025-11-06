@@ -43,7 +43,7 @@ Bottom line: Tailscale provides a unified, always-on private network that just w
     *   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
     *   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
 
-    Alternatively, if you prefer not to create a new VLAN, you can use an existing LAN or VLAN. In this case, you would identify the subnet of that existing network and the script will present it as an option to advertise.
+    Alternatively, if you prefer not to create a new tailscale VLAN, you can use existing LANs or VLANs. In this case, the script will present your existing subnets and allow you to advertise them. Any networks you choose will be directly accessible from tailscale so do this with caution. 
 
 
 
