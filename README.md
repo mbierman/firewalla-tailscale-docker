@@ -90,7 +90,7 @@ After the installation script completes, you **must** perform the following step
 
 ### 🚪 Configuring an Exit Node
 
-An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. This is useful for accessing the internet with your home IP address and for an extra layer of security when on public Wi-Fi.
+An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN.
 
 The installation script will ask you if you want to configure your Firewalla as an exit node. If you answer yes, the script will automatically add the necessary `--advertise-exit-node` flag.
 
@@ -137,4 +137,5 @@ The installer script automates the process described in the [official Tailscale 
 
 ---
 Made with 🔥 and ❤️  for the Firewalla Community! Not associated with or supported by Firewalla. 
+
 
