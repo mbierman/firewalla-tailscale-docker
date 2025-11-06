@@ -3,8 +3,8 @@
 ## Purpose 
 This project provides a set of bash scripts to easily install and uninstall Tailscale as a Docker container on your Firewalla device. This allows your Firewalla to act as a subnet router and/or exit node for your Tailscale network, enabling secure access to your local network from anywhere.
 
-## Why Tailscale
-Firewalla comes with VPN. Why do I need tailscale? 
+## Why Tailscale?
+Firewalla comes with a no-subscription VPN which is amazing. Why do I need tailscale? 
 
 Actually, Firealla has:
 * **[VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server):** allows you to access devices on your Firewalla-network when you are away.
