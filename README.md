@@ -3,16 +3,25 @@
 ## Purpose 
 This project provides a set of bash scripts to easily install and uninstall Tailscale as a Docker container on your Firewalla device. This allows your Firewalla to act as a subnet router and/or exit node for your Tailscale network, enabling secure access to your local network from anywhere.
 
-## Relevance 
-Firewalla comes with VPN Server. Why do I need tailscale? 
+## Why Tailscale
+Firewalla comes with VPN. Why do I need tailscale? 
 
-Firealla has:
+Actually, Firealla has:
 * **[VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server):** allows you to access devices on your Firewalla-network when you are away.
 * **[VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client):** allows your Firealla to connect to another VPN server so your devices don't have to. Want to run your Apple TV through a VPN? just assign it to the VPN client.
 
-So _why tailscale_? Firealla VPN Server requires a public IP. Many ISPs are no longer giving public IPs or charge for them. Without that it is difficult to set up a VPN. Tailscale allows you to connect home even if you don't have a public IP. Tailscale [free tier]([url](https://tailscale.com/pricing)) with some limits.
+So _why tailscale_? There are a many possible answers to this.
 
-Problem solved!
+Tailscale is appealing because it works even if your ISP doesn’t give you a public IP. Many ISPs now place users behind Carrier-Grade NAT (CGNAT), making traditional VPNs like Firewalla’s difficult or impossible to set up. Tailscale handles this automatically, so you can connect to your home network from anywhere, even without a public IP. 
+
+It also integrates seamlessly across all your devices. You don’t need to configure separate VPN clients or remember multiple setups—once a device joins your Tailscale network, it can securely connect to any other authorized device.
+
+Finally, you don’t have to keep switching VPN software to connect different devices. Everything uses the same credentials and rules, making device-to-device access consistent and hassle-free.
+
+Bottom line: Tailscale provides a unified, always-on private network that just works—no public IP, no complex VPN setup, and no juggling multiple clients.
+
+ Tailscale [free tier](https://tailscale.com/pricing) with some limits. Problem solved!
+
 
 ## ✨ Features
 
