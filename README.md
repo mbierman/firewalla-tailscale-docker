@@ -1,4 +1,4 @@
-# 🚀 Firewalla Tailscale Docker Integration 🚀
+# 🚀 Firewalla Tailscale Docker Integration 
 
 ## Purpose 
 This project provides a set of bash scripts to easily install and uninstall Tailscale as a Docker container on your Firewalla device. This allows your Firewalla to act as a subnet router and/or exit node for your Tailscale network, enabling secure access to your local network from anywhere.
