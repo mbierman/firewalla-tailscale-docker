@@ -89,12 +89,14 @@ After the installation script completes, you **must** perform the following step
 
 An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. This is useful for accessing the internet with your home IP address and for an extra layer of security when on public Wi-Fi.
 
-If you chose to configure your Firewalla as an exit node during the installation, you must enable it in your Tailscale admin console:
+The installation script will ask you if you want to configure your Firewalla as an exit node. If you answer yes, the script will automatically add the necessary `--advertise-exit-node` flag.
+
+After the installation is complete, you **must** enable the exit node in your Tailscale admin console:
 
 1.  **Enable Exit Node:** In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**.
 2.  **Enable the `Use as exit node` toggle.**
 
-Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices.
+Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices. For more information, see the [Tailscale documentation on exit nodes](https://tailscale.com/kb/1019/subnets#exit-nodes).
 
 ## 🗑️ Uninstallation
 
