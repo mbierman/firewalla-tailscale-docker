@@ -28,6 +28,23 @@ Problem solved!
 *   An active [Tailscale account](https://login.tailscale.com/start).
 *   A Tailscale Auth Key. You can generate a reusable one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation](https://tailscale.com/kb/1085/auth-keys/).
 
+## 🎯 Getting Ready
+
+Before you begin the installation, please have the following information at hand:
+
+*   **Your Tailscale Auth Key:** You'll need to paste this into the installer. You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/).
+*   **Your Network Layout:** Open your Firewalla app and go to **Network Manager**. Note the names and subnets of the networks you want to make accessible through Tailscale.
+
+### 🛡️ Recommended Security Practice: Dedicated VLAN
+
+For enhanced security and control, we recommend creating a dedicated VLAN on your Firewalla specifically for Tailscale. This creates a secure "landing zone" for all incoming Tailscale traffic, which you can then control with Firewalla's firewall rules.
+
+1.  **Create a new VLAN on your Firewalla.** We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`). The installation script is designed to look for this and recommend it.
+2.  **The script will ask you to advertise this VLAN.**
+3.  **Use Firewalla's rules to control access.** Create rules to allow traffic from your dedicated Tailscale VLAN to other devices or networks as needed.
+
+This approach gives you very precise control over what your Tailscale devices can access on your local network.
+
 ## 🚀 Installation
 
 [SSH to your firewalla. ](https://help.firewalla.com/hc/en-us/articles/115004397274-How-to-access-Firewalla-using-SSH)
@@ -40,7 +57,7 @@ curl -sSL https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/
 The script is interactive and will guide you through the following steps:
 
 1.  **Tailscale Auth Key:** You will be prompted to enter your auth key.
-2.  **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla and ask you, one by one, if you wish to advertise them on your Tailscale network.
+2.  **Advertise Subnets:** Before this step, please open your Firewalla app and go to Network Manager to identify the names of your networks (LAN, Guest, IoT, etc.) and their corresponding subnets. The script will then detect all the local subnets (LAN and VLANs) configured on your Firewalla and ask you, one by one, if you wish to advertise them on your Tailscale network.
 3.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node.
 
 Based on your answers, the script will automatically create the `docker-compose.yml` file, pull the container image, and start Tailscale for you.
@@ -67,7 +84,17 @@ After the installation script completes, you **must** perform the following step
 
 1.  **Authorize Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) and authorize your newly added Firewalla device.
 2.  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
-3.  **Enable Exit Node:** If you chose to enable the exit node, you must also enable it from the **Edit route settings...** menu for the Firewalla device.
+
+### 🚪 Configuring an Exit Node
+
+An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. This is useful for accessing the internet with your home IP address and for an extra layer of security when on public Wi-Fi.
+
+If you chose to configure your Firewalla as an exit node during the installation, you must enable it in your Tailscale admin console:
+
+1.  **Enable Exit Node:** In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**.
+2.  **Enable the `Use as exit node` toggle.**
+
+Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices.
 
 ## 🗑️ Uninstallation
 
