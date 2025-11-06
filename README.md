@@ -59,7 +59,7 @@ curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 
 The script is interactive and will guide you through the following steps:
 
-1.  **Tailscale Auth Key:** You will be prompted to enter your auth key. [[docs]((https://tailscale.com/kb/1085/auth-keys/)]
+1.  **Tailscale Auth Key:** You will be prompted to enter your auth key. [[tailscale docs](https://tailscale.com/kb/1085/auth-keys/)]
 2.  **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
 3.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node.
 
