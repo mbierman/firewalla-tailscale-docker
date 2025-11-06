@@ -37,11 +37,13 @@ Bottom line: Tailscale provides a unified, always-on private network that just w
 *   **A Firewalla device (only tested on Gold series for now).** 
 *   **An active [Tailscale account](https://login.tailscale.com/start).**
 *   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/).
-### REcommended
+### Recommended
 *   **A dedicated VLAN for Tailscale.** For enhanced security and control, we recommend creating a dedicated VLAN on your Firewalla for Tailscale. This creates a secure "landing zone" for all incoming Tailscale traffic, which you can then control with Firewalla's firewall rules. Using a VLAN also avoids consuming your Firewalla's port assignments in the same way a separate physical network might.
     *   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
     *   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
     *   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
+
+    Alternatively, if you prefer not to create a new VLAN, you can use an existing LAN or VLAN. In this case, you would identify the subnet of that existing network and the script will present it as an option to advertise.
 
 
 
@@ -51,13 +53,14 @@ Bottom line: Tailscale provides a unified, always-on private network that just w
 To install Tailscale on your Firewalla, SSH into your Firewalla device and run the following command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh | sudo bash
+# replace this URL
+curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh' | sudo bash
 ```
 
 The script is interactive and will guide you through the following steps:
 
 1.  **Tailscale Auth Key:** You will be prompted to enter your auth key.
-2.  **Advertise Subnets:** Before this step, please open your Firewalla app and go to Network Manager to identify the names of your networks (LAN, Guest, IoT, etc.) and their corresponding subnets. The script will then detect all the local subnets (LAN and VLANs) configured on your Firewalla and ask you, one by one, if you wish to advertise them on your Tailscale network.
+2.  **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
 3.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node.
 
 Based on your answers, the script will automatically create the `docker-compose.yml` file, pull the container image, and start Tailscale for you.
