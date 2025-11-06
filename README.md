@@ -31,28 +31,17 @@ Bottom line: Tailscale provides a unified, always-on private network that just w
 *   **Clean Uninstallation:** A dedicated script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
 
-## 📝 Prerequisites
+## 📝 Preparation
 
-*   A Firewalla device (only tested on Gold series for now).
-*   An active [Tailscale account](https://login.tailscale.com/start).
-*   A Tailscale Auth Key. You can generate a reusable one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation](https://tailscale.com/kb/1085/auth-keys/).
+*   **A Firewalla device (only tested on Gold series for now).**
+*   **An active [Tailscale account](https://login.tailscale.com/start).**
+*   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/).
+*   **A dedicated VLAN for Tailscale (Recommended).** For enhanced security and control, we recommend creating a dedicated VLAN on your Firewalla for Tailscale. This creates a secure "landing zone" for all incoming Tailscale traffic, which you can then control with Firewalla's firewall rules. Using a VLAN also avoids consuming your Firewalla's port assignments in the same way a separate physical network might.
+    *   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
+    *   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
+    *   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
 
-## 🎯 Getting Ready
 
-Before you begin the installation, please have the following information at hand:
-
-*   **Your Tailscale Auth Key:** You'll need to paste this into the installer. You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/).
-*   **Your Network Layout:** Open your Firewalla app and go to **Network Manager**. Note the names and subnets of the networks you want to make accessible through Tailscale.
-
-### 🛡️ Recommended Security Practice: Dedicated VLAN
-
-For enhanced security and control, we recommend creating a dedicated VLAN on your Firewalla specifically for Tailscale. This creates a secure "landing zone" for all incoming Tailscale traffic, which you can then control with Firewalla's firewall rules.
-
-1.  **Create a new VLAN on your Firewalla.** We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`). The installation script is designed to look for this and recommend it.
-2.  **The script will ask you to advertise this VLAN.**
-3.  **Use Firewalla's rules to control access.** Create rules to allow traffic from your dedicated Tailscale VLAN to other devices or networks as needed.
-
-This approach gives you very precise control over what your Tailscale devices can access on your local network.
 
 ## 🚀 Installation
 
