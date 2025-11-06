@@ -45,6 +45,22 @@ The script is interactive and will guide you through the following steps:
 
 Based on your answers, the script will automatically create the `docker-compose.yml` file, pull the container image, and start Tailscale for you.
 
+### Advanced Usage
+
+The `install.sh` script includes flags for more controlled execution:
+
+*   **Test Mode (`-t`):** Run the script in test mode to see which commands would be executed without actually making any changes. This is useful for understanding what the script will do before you run it.
+
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh | sudo bash -s -- -t
+    ```
+
+*   **Confirm Mode (`-c`):** Run the script in confirm mode to be prompted for approval before each command is executed. This gives you fine-grained control over the installation process.
+
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh | sudo bash -s -- -c
+    ```
+
 ### ➡️ Post-Installation Steps
 
 After the installation script completes, you **must** perform the following steps in your Tailscale admin console:
@@ -61,7 +77,21 @@ To remove Tailscale from your Firewalla, SSH into your Firewalla device and run 
 sudo /data/uninstall-tailscale-firewalla.sh
 ```
 
-This script will stop and remove the Tailscale Docker container, delete the `docker-compose.yml` file, and clean up all associated directories and the uninstall script itself.
+This script will stop and remove the Tailscale Docker container and image, delete the `docker-compose.yml` file, and clean up all associated directories and the uninstall script itself.
+
+### Advanced Usage (Uninstall)
+
+The `uninstall.sh` script also supports the `-t` and `-c` flags.
+
+*   **Test Mode (`-t`):**
+    ```bash
+    sudo /data/uninstall-tailscale-firewalla.sh -t
+    ```
+
+*   **Confirm Mode (`-c`):**
+    ```bash
+    sudo /data/uninstall-tailscale-firewalla.sh -c
+    ```
 
 ## 💡 How It Works
 
@@ -75,3 +105,4 @@ The installer script automates the process described in the [official Tailscale 
 
 ---
 Made with 🔥 and ❤️  for the Firewalla Community! Not associated with or supported by Firewalla. 
+
