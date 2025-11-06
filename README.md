@@ -20,7 +20,7 @@ Finally, you don’t have to keep switching VPN software to connect different de
 
 Bottom line: Tailscale provides a unified, always-on private network that just works—no public IP, no complex VPN setup, and no juggling multiple clients.
 
- Tailscale [free tier](https://tailscale.com/pricing) with some limits. Problem solved!
+ Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Problem solved!
 
 
 ## ✨ Features of this script
