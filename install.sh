@@ -70,7 +70,7 @@ echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
 
 # 1. Install/Update Uninstall Script
 echo "$INFO Checking for uninstall script..."
-LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/$GITHUB_REPO/main/github/uninstall.sh"
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRKCHQZXBHLD7Q4JU3O2IRDZ6Q"
 LOCAL_VERSION=""
 REMOTE_VERSION=""
 
