@@ -24,7 +24,7 @@ This repository provides a convenient bash script to install and configure [Tail
 To install Tailscale, simply run the following command on your Firewalla via SSH:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/mbierman/tailscale-firewalla/main/github/install.sh | sudo bash
+curl -sL [https://raw.githubusercontent.com/mbierman/tailscale-firewalla/main/github/install.sh](https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/install.sh?token=GHSAT0AAAAAADNA3IRKITLPJB54VBZIL2IG2IRDYVA) | sudo bash
 ```
 
 The script will:
