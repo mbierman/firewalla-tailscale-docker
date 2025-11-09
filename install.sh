@@ -7,11 +7,14 @@ version="1.0.0"
 # 🚀 Tailscale Docker Installer for Firewalla 🚀
 
 # --- Configuration ---
-DOCKER_DIR="/home/pi/.firewalla/run/docker/tailscale"
-COMPOSE_FILE="$DOCKER_DIR/docker-compose.yml"
+DOCKER_DIR="/data/tailscale"
+COMPOSE_DIR="/home/pi/.firewalla/run/docker/tailscale"
+COMPOSE_FILE="$COMPOSE_DIR/docker-compose.yml"
 STATE_DIR="$DOCKER_DIR/ts-firewalla/state"
 CONFIG_DIR="$DOCKER_DIR/ts-firewalla/config"
 UNINSTALL_SCRIPT_PATH="/data/uninstall-tailscale-firewalla.sh"
+STARTUP_SCRIPT_PATH="/home/pi/.firewalla/config/post_main.d/start_tailscale.sh"
+IP_FORWARD_CONF_FILE="/etc/sysctl.d/99-tailscale-forwarding.conf"
 # This URL will be updated to your GitHub raw URL once the repo is set up
 UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/uninstall.sh"
 
@@ -59,11 +62,16 @@ run_cmd() {
     fi
 
     if [ "$CONFIRM_MODE" = true ]; then
-        read -p "Execute '$@'? [y/N] " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_warning "Skipping command."
-            return 1 # Indicate skipped
+        # Only prompt if running in an interactive terminal
+        if [ -t 0 ]; then
+            read -p "Execute '$*'? [y/N] " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log_warning "Skipping command."
+                return 1 # Indicate skipped
+            fi
+        else
+            log_warning "Running in non-interactive mode. Assuming 'yes' for all confirmations."
         fi
     fi
 
@@ -77,8 +85,8 @@ log_info "Starting Tailscale Docker installation for Firewalla..."
 # --- Create Directories ---
 
 log_info "Creating necessary directories..."
-run_cmd sudo mkdir -p "$STATE_DIR" "$CONFIG_DIR" || { log_error "Failed to create directories."; exit 1; }
-log_success "Directories created: $STATE_DIR and $CONFIG_DIR"
+run_cmd sudo mkdir -p "$STATE_DIR" "$CONFIG_DIR" "$COMPOSE_DIR" || { log_error "Failed to create directories."; exit 1; }
+log_success "Directories created: $STATE_DIR, $CONFIG_DIR, and $COMPOSE_DIR"
 
 # --- Get User Input ---
 
@@ -87,11 +95,16 @@ log_info "Please provide the following information for Tailscale configuration:"
 log_info "You can generate a reusable Auth Key from your Tailscale admin console."
 log_info "See: https://tailscale.com/kb/1085/auth-keys/"
 
-read -p "🔑 Enter your Tailscale Auth Key (e.g., tskey-auth-xxxxxxxxxxxxx): " TS_AUTHKEY
-if [ -z "$TS_AUTHKEY" ]; then
-    log_error "Tailscale Auth Key cannot be empty. Exiting."
-    exit 1
-fi
+while true; do
+    read -p "🔑 Enter your Tailscale Auth Key (e.g., tskey-auth-xxxxxxxxxxxxx): " TS_AUTHKEY
+    if [ -z "$TS_AUTHKEY" ]; then
+        log_error "Tailscale Auth Key cannot be empty. Please try again."
+    elif [[ "$TS_AUTHKEY" == tskey-auth-* ]]; then
+        break
+    else
+        log_error "Invalid Tailscale Auth Key format. It must start with 'tskey-auth-'. Please try again."
+    fi
+done
 
 TS_EXTRA_ARGS=""
 
@@ -100,8 +113,7 @@ log_info "Before proceeding, please open your Firewalla app and go to Network Ma
 # --- Advertise Subnets ---
 log_info "Detecting local subnets..."
 
-# Get all global IP addresses and their subnets, filter out loopback and docker interfaces
-SUBNETS=($(ip -o -f inet addr show | awk '/scope global/ {print $4}' | grep -v \'172.17\' | sort -u))
+SUBNETS=($(ip -o -f inet addr show | grep -e ': br[0-9]*' | awk '{print $4}' | sort -u))
 
 if [ ${#SUBNETS[@]} -eq 0 ]; then
     log_warning "No active subnets detected. If you want to advertise subnets, please ensure your network interfaces are configured correctly."
@@ -110,45 +122,14 @@ else
     log_info "See: https://tailscale.com/kb/1019/subnets"
 
     ROUTES_TO_ADVERTISE=()
-    RECOMMENDED_SUBNET=""
-    OTHER_SUBNETS=()
 
-    # Find the recommended subnet
     for SUBNET in "${SUBNETS[@]}"; do
-        if [[ $SUBNET == *\.100\.* ]]; then
-            RECOMMENDED_SUBNET=$SUBNET
-        else
-            OTHER_SUBNETS+=($SUBNET)
-        fi
-    done
-
-    if [ -n "$RECOMMENDED_SUBNET" ]; then
-        read -p "📡 Recommended: Advertise dedicated Tailscale VLAN subnet $RECOMMENDED_SUBNET? (Y/n): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-            ROUTES_TO_ADVERTISE+=($RECOMMENDED_SUBNET)
-        fi
-
-        read -p "Do you want to advertise any other subnets? (y/N): " -n 1 -r
+        read -p "📡 Advertise subnet $SUBNET? (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            for SUBNET in "${OTHER_SUBNETS[@]}"; do
-                read -p "📡 Advertise subnet $SUBNET? (y/N): " -n 1 -r
-                echo
-                if [[ $REPLY =~ ^[Yy]$ ]]; then
-                    ROUTES_TO_ADVERTISE+=($SUBNET)
-                fi
-            done
+            ROUTES_TO_ADVERTISE+=($SUBNET)
         fi
-    else
-        for SUBNET in "${SUBNETS[@]}"; do
-            read -p "📡 Advertise subnet $SUBNET? (y/N): " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                ROUTES_TO_ADVERTISE+=($SUBNET)
-            fi
-        done
-    fi
+    done
 
     if [ ${#ROUTES_TO_ADVERTISE[@]} -gt 0 ]; then
         TS_EXTRA_ARGS="--advertise-routes=$(IFS=,; echo "${ROUTES_TO_ADVERTISE[*]}")"
@@ -159,17 +140,7 @@ fi
 # --- Exit Node ---
 log_info "You can configure this Firewalla as an 'exit node'. This allows you to route all your internet traffic through your home network when you are away."
 log_info "See: https://tailscale.com/kb/1019/subnets#exit-nodes"
-read -p "🚪 Use this Firewalla as an exit node? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    TS_EXTRA_ARGS="$TS_EXTRA_ARGS --advertise-exit-node"
-    log_success "Firewalla will be configured as an exit node."
-fi
-
-# --- Exit Node ---
-log_info "You can configure this Firewalla as an \'exit node\'. This allows you to route all your internet traffic through your home network when you are away."
-log_info "See: https://tailscale.com/kb/1019/subnets#exit-nodes"
-read -p "🚪 Use this Firewalla as an exit node? (y/N): " -n 1 -r
+read -p "🚪 Do you want to enable the exit node feature? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     TS_EXTRA_ARGS="$TS_EXTRA_ARGS --advertise-exit-node"
@@ -180,6 +151,73 @@ fi
 # Always accept DNS settings from the tailnet
 TS_EXTRA_ARGS="$TS_EXTRA_ARGS --accept-dns=true"
 log_info "DNS will be managed by Tailscale."
+
+# --- Create Startup Script ---
+
+log_info "Creating startup script..."
+
+create_startup_script() {
+    local script_content
+    script_content=$(cat <<EOF
+#!/bin/bash
+
+# Ensure IP forwarding is enabled and persistent via /etc/sysctl.d/
+# This script checks for the sysctl.d file and recreates it if necessary.
+IP_FORWARD_CONF_FILE="/etc/sysctl.d/99-tailscale-forwarding.conf"
+REQUIRED_V4="net.ipv4.ip_forward = 1"
+REQUIRED_V6="net.ipv6.conf.all.forwarding = 1"
+
+if [ ! -f "\$IP_FORWARD_CONF_FILE" ] || ! grep -q "\$REQUIRED_V4" "\$IP_FORWARD_CONF_FILE" || ! grep -q "\$REQUIRED_V6" "\$IP_FORWARD_CONF_FILE"; then
+    echo "⚠️  IP forwarding configuration file missing or incorrect. Recreating..."
+    local sysctl_conf_content="\$REQUIRED_V4
+\$REQUIRED_V6"
+    echo "\$sysctl_conf_content" | sudo tee "\$IP_FORWARD_CONF_FILE" > /dev/null
+    sudo sysctl -p "\$IP_FORWARD_CONF_FILE"
+    echo "✅ IP forwarding configuration ensured."
+else
+    # Ensure settings are loaded, in case they were manually unloaded
+    if ! sysctl -n net.ipv4.ip_forward | grep -q "1" || ! sysctl -n net.ipv6.conf.all.forwarding | grep -q "1"; then
+        echo "ℹ️  IP forwarding settings not active. Loading from \$IP_FORWARD_CONF_FILE..."
+        sudo sysctl -p "\$IP_FORWARD_CONF_FILE"
+        echo "✅ IP forwarding settings loaded."
+    fi
+fi
+
+# Start Tailscale container
+cd "$COMPOSE_DIR" || exit
+if command -v docker-compose &> /dev/null; then
+    docker-compose up -d
+else
+    docker compose up -d
+fi
+EOF
+)
+
+    run_cmd echo "$script_content" | sudo tee "$STARTUP_SCRIPT_PATH" > /dev/null
+    if [ $? -eq 0 ]; then
+        run_cmd sudo chmod +x "$STARTUP_SCRIPT_PATH"
+        log_success "Startup script created successfully at $STARTUP_SCRIPT_PATH."
+    else
+        log_error "Failed to create startup script. Exiting."
+        exit 1
+    fi
+}
+
+enable_ip_forwarding_now() {
+    log_info "Enabling IP forwarding for the current session..."
+    run_cmd sudo sysctl -w net.ipv4.ip_forward=1 || { log_error "Failed to set net.ipv4.ip_forward."; exit 1; }
+    run_cmd sudo sysctl -w net.ipv6.conf.all.forwarding=1 || { log_error "Failed to set net.ipv6.conf.all.forwarding."; exit 1; }
+    log_success "IP forwarding enabled."
+}
+
+make_ip_forwarding_persistent_sysctld() {
+    log_info "Creating persistent IP forwarding configuration in /etc/sysctl.d/..."
+    local sysctl_conf_content="net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1"
+    run_cmd echo "$sysctl_conf_content" | sudo tee "$IP_FORWARD_CONF_FILE" > /dev/null || { log_error "Failed to create $IP_FORWARD_CONF_FILE."; exit 1; }
+    run_cmd sudo sysctl -p "$IP_FORWARD_CONF_FILE" || { log_error "Failed to load settings from $IP_FORWARD_CONF_FILE."; exit 1; }
+    log_success "Persistent IP forwarding configured via $IP_FORWARD_CONF_FILE."
+}
 
 # --- Create docker-compose.yml ---
 
@@ -220,20 +258,7 @@ services:
 EOF
 )
 
-if [ "$TEST_MODE" = true ]; then
-    echo "DRY RUN: Would write the following to $COMPOSE_FILE:"
-    echo "$COMPOSE_CONTENT"
-elif [ "$CONFIRM_MODE" = true ]; then
-    read -p "Write docker-compose.yml to $COMPOSE_FILE? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "$COMPOSE_CONTENT" | sudo tee "$COMPOSE_FILE" > /dev/null
-    else
-        log_warning "Skipping creation of $COMPOSE_FILE."
-    fi
-else
-    echo "$COMPOSE_CONTENT" | sudo tee "$COMPOSE_FILE" > /dev/null
-fi
+run_cmd echo "$COMPOSE_CONTENT" | sudo tee "$COMPOSE_FILE" > /dev/null
 
 if [ $? -eq 0 ]; then
     log_success "docker-compose.yml handled successfully."
@@ -242,12 +267,25 @@ else
     exit 1
 fi
 
-# --- Pull Docker Image and Start Container ---
+# --- Enable IP Forwarding and Start Container ---
 
-log_info "Pulling Tailscale Docker image and starting container..."
-cd "$DOCKER_DIR" || { log_error "Failed to change directory to $DOCKER_DIR. Exiting."; exit 1; }
-run_cmd sudo docker-compose pull || { log_error "Failed to pull Tailscale Docker image. Exiting."; exit 1; }
-run_cmd sudo docker-compose up -d || { log_error "Failed to start Tailscale container. Exiting."; exit 1; }
+log_info "Enabling IP forwarding and starting container..."
+enable_ip_forwarding_now
+make_ip_forwarding_persistent_sysctld
+
+cd "$COMPOSE_DIR" || { log_error "Failed to change directory to $COMPOSE_DIR. Exiting."; exit 1; }
+
+log_info "Pulling latest Tailscale image..."
+if command -v docker-compose &> /dev/null; then
+    run_cmd sudo docker-compose pull || { log_error "Failed to pull Tailscale Docker image. Exiting."; exit 1; }
+    log_info "Starting Tailscale container..."
+    run_cmd sudo docker-compose up -d || { log_error "Failed to start Tailscale container. Exiting."; exit 1; }
+else
+    run_cmd sudo docker compose pull || { log_error "Failed to pull Tailscale Docker image. Exiting."; exit 1; }
+    log_info "Starting Tailscale container..."
+    run_cmd sudo docker compose up -d || { log_error "Failed to start Tailscale container. Exiting."; exit 1; }
+fi
+
 log_success "Tailscale container started successfully!"
 
 # --- Download Uninstall Script ---
@@ -260,8 +298,8 @@ if [ -f "$UNINSTALL_SCRIPT_PATH" ]; then
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         log_warning "Skipping download of uninstall script."
     else
-        run_cmd sudo curl -sSL "$UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to download uninstall script."; }
-        run_cmd sudo chmod +x "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to make uninstall script executable."; }
+        run_cmd sudo curl -sSL "$UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT_PATH" && \
+        run_cmd sudo chmod +x "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to download or make uninstall script executable."; }
         log_success "Uninstall script downloaded and made executable."
     fi
 else
