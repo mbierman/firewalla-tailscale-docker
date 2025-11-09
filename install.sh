@@ -16,6 +16,7 @@ TAILSCALE_DATA_DIR="/data/tailscale"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/tailscale-firewalla"
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRKXOWYMN5OUT2R3LXM2IRET2A"
 
 # --- Command-line flags ---
 TEST_MODE=false
@@ -67,12 +68,9 @@ get_available_subnets() {
 # --- Script Start ---
 
 echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
-
 # 1. Install/Update Uninstall Script
 echo "$INFO Checking for uninstall script..."
-LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRKLOOFOOCCOQJVI6BS2IRD6JQ"
 LOCAL_VERSION=""
-REMOTE_VERSION=""
 
 # Get local version if available
 if [ -f "$UNINSTALL_SCRIPT" ]; then
@@ -81,13 +79,14 @@ if [ -f "$UNINSTALL_SCRIPT" ]; then
 fi
 
 # Get remote version
-REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | grep -m 1 'VERSION=' | cut -d'"' -f2)
+REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | head -n 2 | grep -m 1 'VERSION:' | cut -d':' -f2) 
 
 if [ -z "$REMOTE_VERSION" ]; then
 	echo "$WARNING Could not fetch remote uninstall script version. Will download unconditionally."
 	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
 	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
 elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+echo hello
 	echo "$INFO New uninstall script version ($REMOTE_VERSION) found. Updating..."
 	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
 	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
@@ -143,6 +142,7 @@ if [ "$DUMMY_MODE" = false ]; then
 		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
 		ADVERTISED_ROUTES=""
 	else
+          # NO user should be asked if they want to use each subnet. 
 		ADVERTISED_ROUTES=$(IFS=,; echo "${AVAILABLE_SUBNETS[*]}")
 		echo "$SUCCESS Found and will advertise the following subnets: $ADVERTISED_ROUTES"
 	fi
