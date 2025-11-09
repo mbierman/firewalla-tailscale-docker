@@ -1,319 +1,287 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
-version="1.0.0"
-# Credit to u/adrianmihalko for the original docker-compose concept
-# https://www.reddit.com/r/firewalla/comments/1mlrtvi/easy_tailscale_integration_via_docker_compose/
+# Emoji for user-facing output
+INFO="ℹ️"
+SUCCESS="✅"
+WARNING="⚠️"
+ERROR="❌"
+VERSION="1.2.0" 
 
-# 🚀 Tailscale Docker Installer for Firewalla 🚀
+# --- Paths ---
+TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
+DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
+TAILSCALE_DATA_DIR="/data/tailscale"
+SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
+UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
+GITHUB_REPO="mbierman/tailscale-firewalla"
 
-# --- Configuration ---
-DOCKER_DIR="/data/tailscale"
-COMPOSE_DIR="/home/pi/.firewalla/run/docker/tailscale"
-COMPOSE_FILE="$COMPOSE_DIR/docker-compose.yml"
-STATE_DIR="$DOCKER_DIR/ts-firewalla/state"
-CONFIG_DIR="$DOCKER_DIR/ts-firewalla/config"
-UNINSTALL_SCRIPT_PATH="/data/uninstall-tailscale-firewalla.sh"
-STARTUP_SCRIPT_PATH="/home/pi/.firewalla/config/post_main.d/start_tailscale.sh"
-IP_FORWARD_CONF_FILE="/etc/sysctl.d/99-tailscale-forwarding.conf"
-# This URL will be updated to your GitHub raw URL once the repo is set up
-UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/uninstall.sh"
-
-# --- Options ---
+# --- Command-line flags ---
 TEST_MODE=false
 CONFIRM_MODE=false
+DUMMY_MODE=false
 
-while getopts "tc" opt; do
-  case $opt in
-    t)
-      TEST_MODE=true
-      ;;
-    c)
-      CONFIRM_MODE=true
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
-      ;;
-  esac
+while getopts "tcd" opt; do
+	case ${opt} in
+		t) TEST_MODE=true ;;
+		c) CONFIRM_MODE=true ;;
+		d) DUMMY_MODE=true ;;
+		*) echo "Invalid option: -${OPTARG}" >&2; exit 1 ;;
+	esac
 done
+shift $((OPTIND -1))
 
 # --- Functions ---
 
-log_info() {
-    echo "ℹ️  $1"
+# Check for mutually exclusive flags
+if [ "$TEST_MODE" = true ] && [ "$DUMMY_MODE" = true ]; then
+	echo "$ERROR The -t (test) and -d (dummy) flags are mutually exclusive. Please use one or the other."
+	exit 1
+fi
+
+# Function to execute or display commands
+run_command() {
+	if [ "$DUMMY_MODE" = true ]; then
+		echo "[DEV MODE] Would run: $@"
+	elif [ "$TEST_MODE" = true ]; then
+		echo "[TEST MODE] Would run: $@"
+	elif [ "$CONFIRM_MODE" = true ]; then
+		read -p "Run this command? '$@' [y/N] " -n 1 -r
+		echo
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			"$@"
+		else
+			echo "Skipping command."
+		fi
+	else
+		"$@"
+	fi
 }
 
-log_success() {
-    echo "✅ $1"
+# Function to get available subnets from bridge interfaces
+get_available_subnets() {
+	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $4}'
 }
 
-log_error() {
-    echo "❌ $1"
-}
+# --- Script Start ---
 
-log_warning() {
-    echo "⚠️  $1"
-}
+echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
 
-run_cmd() {
-    if [ "$TEST_MODE" = true ]; then
-        echo "DRY RUN: Would execute: $@"
-        return 0 # Assume success in test mode
-    fi
+# 1. Install/Update Uninstall Script
+echo "$INFO Checking for uninstall script..."
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/$GITHUB_REPO/main/github/uninstall.sh"
+LOCAL_VERSION=""
+REMOTE_VERSION=""
 
-    if [ "$CONFIRM_MODE" = true ]; then
-        # Only prompt if running in an interactive terminal
-        if [ -t 0 ]; then
-            read -p "Execute '$*'? [y/N] " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                log_warning "Skipping command."
-                return 1 # Indicate skipped
-            fi
-        else
-            log_warning "Running in non-interactive mode. Assuming 'yes' for all confirmations."
-        fi
-    fi
+# Get local version if available
+if [ -f "$UNINSTALL_SCRIPT" ]; then
+	# Source the script in a subshell to avoid variable conflicts
+	LOCAL_VERSION=$( (source "$UNINSTALL_SCRIPT" && echo "$VERSION") )
+fi
 
-    "$@"
-}
+# Get remote version
+REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | grep -m 1 'VERSION=' | cut -d'"' -f2)
 
-# --- Pre-checks ---
-
-log_info "Starting Tailscale Docker installation for Firewalla..."
-
-# --- Create Directories ---
-
-log_info "Creating necessary directories..."
-run_cmd sudo mkdir -p "$STATE_DIR" "$CONFIG_DIR" "$COMPOSE_DIR" || { log_error "Failed to create directories."; exit 1; }
-log_success "Directories created: $STATE_DIR, $CONFIG_DIR, and $COMPOSE_DIR"
-
-# --- Get User Input ---
-
-log_info "Please provide the following information for Tailscale configuration:"
-
-log_info "You can generate a reusable Auth Key from your Tailscale admin console."
-log_info "See: https://tailscale.com/kb/1085/auth-keys/"
-
-while true; do
-    read -p "🔑 Enter your Tailscale Auth Key (e.g., tskey-auth-xxxxxxxxxxxxx): " TS_AUTHKEY
-    if [ -z "$TS_AUTHKEY" ]; then
-        log_error "Tailscale Auth Key cannot be empty. Please try again."
-    elif [[ "$TS_AUTHKEY" == tskey-auth-* ]]; then
-        break
-    else
-        log_error "Invalid Tailscale Auth Key format. It must start with 'tskey-auth-'. Please try again."
-    fi
-done
-
-TS_EXTRA_ARGS=""
-
-log_info "Before proceeding, please open your Firewalla app and go to Network Manager to identify the names of your networks (LAN, Guest, IoT, etc.) and their corresponding subnets. This will help you decide which subnets to advertise."
-
-# --- Advertise Subnets ---
-log_info "Detecting local subnets..."
-
-SUBNETS=($(ip -o -f inet addr show | grep -e ': br[0-9]*' | awk '{print $4}' | sort -u))
-
-if [ ${#SUBNETS[@]} -eq 0 ]; then
-    log_warning "No active subnets detected. If you want to advertise subnets, please ensure your network interfaces are configured correctly."
+if [ -z "$REMOTE_VERSION" ]; then
+	echo "$WARNING Could not fetch remote uninstall script version. Will download unconditionally."
+	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
+	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
+elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+	echo "$INFO New uninstall script version ($REMOTE_VERSION) found. Updating..."
+	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
+	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
+	echo "$SUCCESS Uninstall script updated to version $REMOTE_VERSION."
 else
-    log_info "You can advertise these subnets to your Tailscale network, making them accessible from other devices on your tailnet."
-    log_info "See: https://tailscale.com/kb/1019/subnets"
-
-    ROUTES_TO_ADVERTISE=()
-
-    for SUBNET in "${SUBNETS[@]}"; do
-        read -p "📡 Advertise subnet $SUBNET? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ROUTES_TO_ADVERTISE+=($SUBNET)
-        fi
-    done
-
-    if [ ${#ROUTES_TO_ADVERTISE[@]} -gt 0 ]; then
-        TS_EXTRA_ARGS="--advertise-routes=$(IFS=,; echo "${ROUTES_TO_ADVERTISE[*]}")"
-        log_success "Will advertise the following routes: $(IFS=,; echo "${ROUTES_TO_ADVERTISE[*]}")"
-    fi
+	echo "$SUCCESS Uninstall script is already up to date (v$LOCAL_VERSION)."
 fi
 
-# --- Exit Node ---
-log_info "You can configure this Firewalla as an 'exit node'. This allows you to route all your internet traffic through your home network when you are away."
-log_info "See: https://tailscale.com/kb/1019/subnets#exit-nodes"
-read -p "🚪 Do you want to enable the exit node feature? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    TS_EXTRA_ARGS="$TS_EXTRA_ARGS --advertise-exit-node"
-    log_success "Firewalla will be configured as an exit node."
-fi
+# 2. Create Directories
+echo "$INFO Creating directories..."
+run_command sudo mkdir -p "$TAILSCALE_DIR" "$TAILSCALE_DATA_DIR"
+echo "$SUCCESS Directories created."
 
-# --- DNS Settings ---
-# Always accept DNS settings from the tailnet
-TS_EXTRA_ARGS="$TS_EXTRA_ARGS --accept-dns=true"
-log_info "DNS will be managed by Tailscale."
-
-# --- Create Startup Script ---
-
-log_info "Creating startup script..."
-
-create_startup_script() {
-    local script_content
-    script_content=$(cat <<EOF
-#!/bin/bash
-
-# Ensure IP forwarding is enabled and persistent via /etc/sysctl.d/
-# This script checks for the sysctl.d file and recreates it if necessary.
-IP_FORWARD_CONF_FILE="/etc/sysctl.d/99-tailscale-forwarding.conf"
-REQUIRED_V4="net.ipv4.ip_forward = 1"
-REQUIRED_V6="net.ipv6.conf.all.forwarding = 1"
-
-if [ ! -f "\$IP_FORWARD_CONF_FILE" ] || ! grep -q "\$REQUIRED_V4" "\$IP_FORWARD_CONF_FILE" || ! grep -q "\$REQUIRED_V6" "\$IP_FORWARD_CONF_FILE"; then
-    echo "⚠️  IP forwarding configuration file missing or incorrect. Recreating..."
-    local sysctl_conf_content="\$REQUIRED_V4
-\$REQUIRED_V6"
-    echo "\$sysctl_conf_content" | sudo tee "\$IP_FORWARD_CONF_FILE" > /dev/null
-    sudo sysctl -p "\$IP_FORWARD_CONF_FILE"
-    echo "✅ IP forwarding configuration ensured."
+# 3. Gather User Input
+if [ "$DUMMY_MODE" = true ]; then
+	# Dummy data for -d flag
+	echo "[DEV MODE] Skipping user input and using dummy data."
+	TS_HOSTNAME="ts-firewalla-test"
+	TS_AUTHKEY="tskey-test-key"
+	TS_EXTRA_ARGS=""
+	ADVERTISED_ROUTES="192.168.0.0/24"
 else
-    # Ensure settings are loaded, in case they were manually unloaded
-    if ! sysctl -n net.ipv4.ip_forward | grep -q "1" || ! sysctl -n net.ipv6.conf.all.forwarding | grep -q "1"; then
-        echo "ℹ️  IP forwarding settings not active. Loading from \$IP_FORWARD_CONF_FILE..."
-        sudo sysctl -p "\$IP_FORWARD_CONF_FILE"
-        echo "✅ IP forwarding settings loaded."
-    fi
+	# Hostname
+	read -p "$INFO Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME
+	TS_HOSTNAME=${TS_HOSTNAME:-ts-firewalla}
+
+	#  Tailscale Auth Key
+	while true; do
+		read -p "$INFO Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY
+		if [[ "$TS_AUTHKEY" == tskey-* ]]; then
+			break
+		else
+			echo "$ERROR Invalid format. The Auth Key must start with 'tskey-'."
+		fi
+	done
+
+	# Exit Node
+	read -p "$INFO Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
+	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
+		TS_EXTRA_ARGS="--exit-node --exit-node-allow-lan-access"
+		echo "$INFO This device will be configured as an exit node."
+	else
+		TS_EXTRA_ARGS=""
+		echo "$INFO This device will not be configured as an exit node."
+	fi
 fi
 
-# Start Tailscale container
-cd "$COMPOSE_DIR" || exit
-if command -v docker-compose &> /dev/null; then
-    docker-compose up -d
+# 4. Discover and set subnets
+echo "$INFO Discovering available subnets..."
+if [ "$DUMMY_MODE" = false ]; then
+	AVAILABLE_SUBNETS=($(get_available_subnets))
+	if [ ${#AVAILABLE_SUBNETS[@]} -eq 0 ]; then
+		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
+		ADVERTISED_ROUTES=""
+	else
+		ADVERTISED_ROUTES=$(IFS=,; echo "${AVAILABLE_SUBNETS[*]}")
+		echo "$SUCCESS Found and will advertise the following subnets: $ADVERTISED_ROUTES"
+	fi
+fi
+
+# 5. Create docker-compose.yml
+echo "$INFO Creating docker-compose.yml file..."
+if [ "$DUMMY_MODE" = true ]; then
+	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with dummy values."
+elif [ "$CONFIRM_MODE" = true ]; then
+	echo "The following docker-compose.yml will be created:"
+	cat <<-EOF
+	version: '3.8'
+	services:
+	  tailscale:
+	    container_name: tailscale
+	    image: tailscale/tailscale:latest
+	    hostname: ${TS_HOSTNAME}
+	    volumes:
+	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
+	      - "/dev/net/tun:/dev/net/tun"
+	    cap_add:
+	      - NET_ADMIN
+	      - SYS_MODULE
+	    environment:
+	      - TS_AUTHKEY=${TS_AUTHKEY}
+	      - TS_STATE_DIR=/var/lib/tailscale
+	      - TS_ACCEPT_ROUTES=true
+	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
+	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
+	    network_mode: host
+	    restart: unless-stopped
+	EOF
+	read -p "Create this file? [y/N] " -n 1 -r
+	echo
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null <<-EOF
+		version: '3.8'
+		services:
+		  tailscale:
+		    container_name: tailscale
+		    image: tailscale/tailscale:latest
+		    hostname: ${TS_HOSTNAME}
+		    volumes:
+		      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
+		      - "/dev/net/tun:/dev/net/tun"
+		    cap_add:
+		      - NET_ADMIN
+		      - SYS_MODULE
+		    environment:
+		      - TS_AUTHKEY=${TS_AUTHKEY}
+		      - TS_STATE_DIR=/var/lib/tailscale
+		      - TS_ACCEPT_ROUTES=true
+		      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
+		      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
+		    network_mode: host
+		    restart: unless-stopped
+		EOF
+		echo "$SUCCESS docker-compose.yml created."
+	else
+		echo "Skipping docker-compose.yml creation."
+	fi
 else
-    docker compose up -d
-fi
-EOF
-)
-
-    run_cmd echo "$script_content" | sudo tee "$STARTUP_SCRIPT_PATH" > /dev/null
-    if [ $? -eq 0 ]; then
-        run_cmd sudo chmod +x "$STARTUP_SCRIPT_PATH"
-        log_success "Startup script created successfully at $STARTUP_SCRIPT_PATH."
-    else
-        log_error "Failed to create startup script. Exiting."
-        exit 1
-    fi
-}
-
-enable_ip_forwarding_now() {
-    log_info "Enabling IP forwarding for the current session..."
-    run_cmd sudo sysctl -w net.ipv4.ip_forward=1 || { log_error "Failed to set net.ipv4.ip_forward."; exit 1; }
-    run_cmd sudo sysctl -w net.ipv6.conf.all.forwarding=1 || { log_error "Failed to set net.ipv6.conf.all.forwarding."; exit 1; }
-    log_success "IP forwarding enabled."
-}
-
-make_ip_forwarding_persistent_sysctld() {
-    log_info "Creating persistent IP forwarding configuration in /etc/sysctl.d/..."
-    local sysctl_conf_content="net.ipv4.ip_forward = 1
-net.ipv6.conf.all.forwarding = 1"
-    run_cmd echo "$sysctl_conf_content" | sudo tee "$IP_FORWARD_CONF_FILE" > /dev/null || { log_error "Failed to create $IP_FORWARD_CONF_FILE."; exit 1; }
-    run_cmd sudo sysctl -p "$IP_FORWARD_CONF_FILE" || { log_error "Failed to load settings from $IP_FORWARD_CONF_FILE."; exit 1; }
-    log_success "Persistent IP forwarding configured via $IP_FORWARD_CONF_FILE."
-}
-
-# --- Create docker-compose.yml ---
-
-log_info "Creating docker-compose.yml file..."
-
-if [ -f "$COMPOSE_FILE" ]; then
-    read -p "⚠️  $COMPOSE_FILE already exists. Do you want to overwrite it? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_warning "Skipping creation of $COMPOSE_FILE."
-        # If we skip creation, we should also skip the rest of the docker-compose related steps
-        # but the script is not designed for that. So we just exit.
-        exit 0
-    fi
+	sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null <<-EOF
+	version: '3.8'
+	services:
+	  tailscale:
+	    container_name: tailscale
+	    image: tailscale/tailscale:latest
+	    hostname: ${TS_HOSTNAME}
+	    volumes:
+	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
+	      - "/dev/net/tun:/dev/net/tun"
+	    cap_add:
+	      - NET_ADMIN
+	      - SYS_MODULE
+	    environment:
+	      - TS_AUTHKEY=${TS_AUTHKEY}
+	      - TS_STATE_DIR=/var/lib/tailscale
+	      - TS_ACCEPT_ROUTES=true
+	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
+	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
+	    network_mode: host
+	    restart: unless-stopped
+	EOF
+	echo "$SUCCESS docker-compose.yml created."
 fi
 
-COMPOSE_CONTENT=$(cat <<EOF
-services:
-  tailscale:
-    image: tailscale/tailscale:latest
-    container_name: tailscale
-    hostname: ts-firewalla
-    environment:
-      - TS_AUTHKEY=$TS_AUTHKEY
-      - TS_EXTRA_ARGS=$TS_EXTRA_ARGS
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-    volumes:
-      - $STATE_DIR:/var/lib/tailscale
-      - $CONFIG_DIR:/config
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    network_mode: host
-    restart: unless-stopped
-EOF
-)
-
-run_cmd echo "$COMPOSE_CONTENT" | sudo tee "$COMPOSE_FILE" > /dev/null
-
-if [ $? -eq 0 ]; then
-    log_success "docker-compose.yml handled successfully."
+# 6. Enable IP Forwarding
+echo "$INFO Enabling persistent IP forwarding..."
+if [ ! -f "$SYSCTL_CONF_FILE" ] || [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
+	run_command echo "net.ipv4.ip_forward=1" | sudo tee "$SYSCTL_CONF_FILE" > /dev/null
+	run_command echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a "$SYSCTL_CONF_FILE" > /dev/null
+	run_command sudo sysctl -p "$SYSCTL_CONF_FILE"
+	echo "$SUCCESS IP forwarding enabled and made persistent."
 else
-    log_error "Failed to handle docker-compose.yml. Exiting."
-    exit 1
+	echo "$INFO IP forwarding configuration already exists."
 fi
 
-# --- Enable IP Forwarding and Start Container ---
+# 7. Start the container
+echo "$INFO Pulling the latest Tailscale image..."
+run_command sudo docker compose -f "$DOCKER_COMPOSE_FILE" pull
+echo "$INFO Starting the Tailscale container..."
+run_command sudo docker compose -f "$DOCKER_COMPOSE_FILE" up -d
 
-log_info "Enabling IP forwarding and starting container..."
-enable_ip_forwarding_now
-make_ip_forwarding_persistent_sysctld
+# 8. Verify Container Status
+if [ "$TEST_MODE" = false ] && [ "$CONFIRM_MODE" = false ] && [ "$DUMMY_MODE" = false ]; then
+	echo "$INFO Verifying container status..."
+	for i in {1..5}; do
+		STATUS=$(sudo docker inspect --format '{{.State.Status}}' tailscale)
+		if [ "$STATUS" == "running" ]; then
+			echo "$SUCCESS Tailscale container is running."
+			break
+		fi
+		echo "$WARNING Container status is '$STATUS'. Waiting... (Attempt $i/5)"
+		sleep 5
+	done
 
-cd "$COMPOSE_DIR" || { log_error "Failed to change directory to $COMPOSE_DIR. Exiting."; exit 1; }
-
-log_info "Pulling latest Tailscale image..."
-if command -v docker-compose &> /dev/null; then
-    run_cmd sudo docker-compose pull || { log_error "Failed to pull Tailscale Docker image. Exiting."; exit 1; }
-    log_info "Starting Tailscale container..."
-    run_cmd sudo docker-compose up -d || { log_error "Failed to start Tailscale container. Exiting."; exit 1; }
-else
-    run_cmd sudo docker compose pull || { log_error "Failed to pull Tailscale Docker image. Exiting."; exit 1; }
-    log_info "Starting Tailscale container..."
-    run_cmd sudo docker compose up -d || { log_error "Failed to start Tailscale container. Exiting."; exit 1; }
+	if [ "$STATUS" != "running" ]; then
+		echo "$ERROR Tailscale container failed to start. Current status: '$STATUS'."
+		echo "$INFO Please check the container logs for errors:"
+		echo "    sudo docker logs tailscale"
+		echo "$INFO Also, review your docker-compose.yml at $DOCKER_COMPOSE_FILE."
+		exit 1
+	fi
 fi
 
-log_success "Tailscale container started successfully!"
-
-# --- Download Uninstall Script ---
-
-log_info "Downloading uninstall script to $UNINSTALL_SCRIPT_PATH..."
-
-if [ -f "$UNINSTALL_SCRIPT_PATH" ]; then
-    read -p "⚠️  $UNINSTALL_SCRIPT_PATH already exists. Do you want to overwrite it? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_warning "Skipping download of uninstall script."
-    else
-        run_cmd sudo curl -sSL "$UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT_PATH" && \
-        run_cmd sudo chmod +x "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to download or make uninstall script executable."; }
-        log_success "Uninstall script downloaded and made executable."
-    fi
-else
-    run_cmd sudo curl -sSL "$UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to download uninstall script."; }
-    run_cmd sudo chmod +x "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to make uninstall script executable."; }
-    log_success "Uninstall script downloaded and made executable."
-fi
-
-# --- Post-installation Instructions ---
-
-log_info "🎉 Installation Complete! 🎉"
-log_info "Next Steps:"
-log_info "1. 🌐 Authorize your Firewalla device in the Tailscale admin console (https://login.tailscale.com/admin/machines)."
-log_info "2. 🛣️ If you advertised subnet routes (--advertise-routes), enable them in the Tailscale admin console for your Firewalla device."
-log_info "3. 🚪 If you advertised an exit node (--advertise-exit-node), enable it in the Tailscale admin console for your Firewalla device."
-log_info "4. 🗑️ To uninstall, run: sudo $UNINSTALL_SCRIPT_PATH"
-log_info "Enjoy your Tailscale-enabled Firewalla! 🚀"
+# 9. Final Instructions
+echo ""
+echo "$SUCCESS Tailscale installation is complete! 🎉"
+echo ""
+echo "$INFO The Tailscale node on your Firewalla has been pre-authenticated with the key you provided."
+echo "$INFO It should appear in your Tailscale admin console shortly."
+echo ""
+echo "$WARNING IMPORTANT: Authorize Subnet Routes"
+echo "1. Go to your Tailscale Admin Console: https://login.tailscale.com/admin/machines"
+echo "2. Find the '${TS_HOSTNAME}' device."
+echo "3. Click the '...' menu and select 'Edit route settings...'."
+echo "4. Approve the subnet route(s) for '${ADVERTISED_ROUTES}' to access your local network."
+echo ""
+echo "$INFO You can run the uninstaller later with: sudo $UNINSTALL_SCRIPT"
+echo ""

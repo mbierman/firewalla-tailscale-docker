@@ -1,138 +1,101 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
-# 🗑️ Tailscale Docker Uninstaller for Firewalla 🗑️
+# Emoji for user-facing output
+INFO="ℹ️"
+SUCCESS="✅"
+WARNING="⚠️"
+ERROR="❌"
+VERSION="1.2.0"
 
-# --- Configuration ---
-DOCKER_DIR="/home/pi/.firewalla/run/docker/tailscale"
-COMPOSE_FILE="$DOCKER_DIR/docker-compose.yml"
-STATE_DIR="$DOCKER_DIR/ts-firewalla/state"
-CONFIG_DIR="$DOCKER_DIR/ts-firewalla/config"
-UNINSTALL_SCRIPT_PATH="/data/uninstall-tailscale-firewalla.sh"
-
-# --- Options ---
+# --- Command-line flags ---
 TEST_MODE=false
 CONFIRM_MODE=false
 
 while getopts "tc" opt; do
-  case $opt in
-    t)
-      TEST_MODE=true
-      ;;
-    c)
-      CONFIRM_MODE=true
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
-      ;;
-  esac
+	case ${opt} in
+		t) TEST_MODE=true ;;
+		c) CONFIRM_MODE=true ;;
+		*) echo "Invalid option: -${OPTARG}" >&2; exit 1 ;;
+	esac
 done
+shift $((OPTIND -1))
+
+# --- Paths ---
+TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
+DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
+TAILSCALE_DATA_DIR="/data/tailscale"
+SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
+UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 
 # --- Functions ---
 
-log_info() {
-    echo "ℹ️ $1"
+# Function to execute or display commands
+run_command() {
+	if [ "$TEST_MODE" = true ]; then
+		echo "[TEST MODE] Would run: $@"
+	elif [ "$CONFIRM_MODE" = true ]; then
+		read -p "Run this command? '$@' [y/N] " -n 1 -r
+		echo
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			"$@"
+		else
+			echo "Skipping command."
+		fi
+	else
+		"$@"
+	fi
 }
 
-log_success() {
-    echo "✅ $1"
-}
+echo "$INFO Starting Tailscale uninstallation (v$VERSION)..."
 
-log_error() {
-    echo "❌ $1"
-}
-
-log_warning() {
-    echo "⚠️ $1"
-}
-
-run_cmd() {
-    if [ "$TEST_MODE" = true ]; then
-        echo "DRY RUN: Would execute: $@"
-        return 0 # Assume success in test mode
-    fi
-
-    if [ "$CONFIRM_MODE" = true ]; then
-        read -p "Execute '$@'? [y/N] " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_warning "Skipping command."
-            return 1 # Indicate skipped
-        fi
-    fi
-
-    "$@"
-}
-
-# --- Pre-checks ---
-
-log_info "Starting Tailscale Docker uninstallation for Firewalla..."
-
-if ! command -v docker &> /dev/null; then
-    log_error "Docker is not installed. Cannot proceed with uninstallation."
-    exit 1
-fi
-
-if ! command -v docker-compose &> /dev/null; then
-    log_error "Docker Compose is not installed. Cannot proceed with uninstallation."
-    exit 1
-fi
-
-# --- Stop and Remove Container ---
-
-if [ -f "$COMPOSE_FILE" ]; then
-    log_info "Stopping and removing Tailscale container..."
-    cd "$DOCKER_DIR" || { log_error "Failed to change directory to $DOCKER_DIR."; exit 1; }
-    run_cmd sudo docker-compose down || { log_error "Failed to stop and remove Tailscale container."; }
-    log_success "Tailscale container stopped and removed."
+# 1. Stop and remove the Docker container
+if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+	echo "$INFO Stopping and removing Tailscale container..."
+	# Use 'docker compose' if available, otherwise fallback to 'docker-compose'
+	if docker compose version &>/dev/null; then
+		run_command sudo docker compose -f "$DOCKER_COMPOSE_FILE" down -v
+	else
+		run_command sudo docker-compose -f "$DOCKER_COMPOSE_FILE" down -v
+	fi
+	echo "$SUCCESS Tailscale container stopped and volumes removed."
 else
-    log_warning "docker-compose.yml not found at $COMPOSE_FILE. Skipping container removal."
+	echo "$INFO docker-compose.yml not found. Skipping container removal."
 fi
 
-# --- Remove Docker Image ---
-log_info "Removing Tailscale Docker image..."
-run_cmd sudo docker image rm tailscale/tailscale:latest || { log_warning "Failed to remove Tailscale Docker image. It may have already been removed or is in use by another container."; }
-log_success "Tailscale Docker image removed."
-
-# --- Disable IP Forwarding ---
-
-log_info "Disabling IP forwarding..."
-run_cmd sudo rm /etc/sysctl.d/99-tailscale.conf
-log_success "IP forwarding disabled."
-
-# --- Remove Files and Directories ---
-
-log_info "Removing Tailscale related files and directories..."
-
-if [ -f "$COMPOSE_FILE" ]; then
-    run_cmd sudo rm "$COMPOSE_FILE" || { log_error "Failed to remove $COMPOSE_FILE."; }
-    log_success "Removed $COMPOSE_FILE."
+# 2. Remove configuration directory
+if [ -d "$TAILSCALE_DIR" ]; then
+	echo "$INFO Removing Tailscale configuration directory..."
+	run_command sudo rm -rf "$TAILSCALE_DIR"
+	echo "$SUCCESS Tailscale configuration directory removed."
 fi
 
-if [ -d "$STATE_DIR" ]; then
-    run_cmd sudo rm -rf "$STATE_DIR" || { log_error "Failed to remove $STATE_DIR."; }
-    log_success "Removed $STATE_DIR."
+# 3. Remove Tailscale data directory
+if [ -d "$TAILSCALE_DATA_DIR" ]; then
+	echo "$INFO Removing Tailscale data directory..."
+	run_command sudo rm -rf "$TAILSCALE_DATA_DIR"
+	echo "$SUCCESS Tailscale data directory removed."
 fi
 
-if [ -d "$CONFIG_DIR" ]; then
-    run_cmd sudo rm -rf "$CONFIG_DIR" || { log_error "Failed to remove $CONFIG_DIR."; }
-    log_success "Removed $CONFIG_DIR."
+# 4. Remove persistent IP forwarding
+if [ -f "$SYSCTL_CONF_FILE" ]; then
+	echo "$INFO Removing persistent IP forwarding config..."
+	run_command sudo rm -f "$SYSCTL_CONF_FILE"
+	# Reload sysctl to apply the change
+	run_command sudo sysctl --system
+	echo "$SUCCESS IP forwarding config removed."
 fi
 
-if [ -d "$DOCKER_DIR" ]; then
-    # Check if the directory is empty before removing it
-    if [ -z "$(ls -A "$DOCKER_DIR")" ]; then
-        run_cmd sudo rm -rf "$DOCKER_DIR" || { log_error "Failed to remove $DOCKER_DIR."; }
-        log_success "Removed $DOCKER_DIR."
-    else
-        log_warning "$DOCKER_DIR is not empty after removing Tailscale files. Skipping directory removal."
-    fi
+# 5. Remove the uninstall script itself
+if [ -f "$UNINSTALL_SCRIPT" ]; then
+	echo "$INFO Removing uninstall script..."
+	run_command sudo rm -f "$UNINSTALL_SCRIPT"
+	echo "$SUCCESS Uninstall script removed."
 fi
 
-if [ -f "$UNINSTALL_SCRIPT_PATH" ]; then
-    run_cmd sudo rm "$UNINSTALL_SCRIPT_PATH" || { log_error "Failed to remove $UNINSTALL_SCRIPT_PATH."; }
-    log_success "Removed $UNINSTALL_SCRIPT_PATH."
-fi
-
-log_info "🗑️ Uninstallation Complete! 🗑️"
-log_info "Tailscale Docker components have been removed from your Firewalla."
+echo ""
+echo "$SUCCESS Tailscale uninstallation complete! 👋"
+echo "$INFO You may want to manually remove the Firewalla device from your"
+echo "$INFO Tailscale admin console if it's still listed."
+echo ""

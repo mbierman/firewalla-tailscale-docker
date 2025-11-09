@@ -1,7 +1,0 @@
-# Daily Changes Log
-
-## 2025-11-09
-
-### Features
-
-- Added a validation loop for the Tailscale Auth Key in `install.sh`. The script now prompts the user to re-enter the key until it starts with "tskey-auth-", ensuring correct format and preventing empty inputs.
