@@ -9,6 +9,15 @@ WARNING="⚠️"
 ERROR="❌"
 VERSION="1.2.0" 
 
+# Function to check if a URL exists
+check_url_exists() {
+    local url="$1"
+    if ! curl -s --head --fail "$url" > /dev/null; then
+        echo "$ERROR The URL '$url' for the uninstall script was not found or is inaccessible. Please check the URL and your network connection."
+        exit 1
+    fi
+}
+
 # --- Paths ---
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
@@ -16,12 +25,14 @@ TAILSCALE_DATA_DIR="/data/tailscale"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/tailscale-firewalla"
-LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRKXOWYMN5OUT2R3LXM2IRET2A"
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRKVTVS5V2IXDXB4OSU2IRFSVA"
+check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
 # --- Command-line flags ---
 TEST_MODE=false
 CONFIRM_MODE=false
 DUMMY_MODE=false
+TS_EXTRA_ARGS="" # Initialize TS_EXTRA_ARGS
 
 while getopts "tcd" opt; do
 	case ${opt} in
@@ -57,6 +68,18 @@ run_command() {
 		fi
 	else
 		"$@"
+	fi
+}
+
+# Function to determine and execute the correct docker compose command
+docker_compose_command() {
+	if docker compose version &>/dev/null; then
+		run_command sudo docker compose "$@"
+	elif docker-compose version &>/dev/null; then
+		run_command sudo docker-compose "$@"
+	else
+		echo "$ERROR Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."
+		exit 1
 	fi
 }
 
@@ -142,16 +165,78 @@ if [ "$DUMMY_MODE" = false ]; then
 		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
 		ADVERTISED_ROUTES=""
 	else
-          # NO user should be asked if they want to use each subnet. 
-		ADVERTISED_ROUTES=$(IFS=,; echo "${AVAILABLE_SUBNETS[*]}")
-		echo "$SUCCESS Found and will advertise the following subnets: $ADVERTISED_ROUTES"
+		ADVERTISED_ROUTES=""
+		for subnet in "${AVAILABLE_SUBNETS[@]}"; do
+read -p "$INFO Do you want to advertise the subnet $subnet? (y/N): " ADVERTISE_SUBNET
+if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
+    if [ -z "$ADVERTISED_ROUTES" ]; then
+        ADVERTISED_ROUTES="$subnet"
+    else
+        ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$subnet"
+    fi
+    echo "$SUCCESS Subnet $subnet will be advertised."
+else
+    echo "$INFO Subnet $subnet will NOT be advertised."
+fi
+		done
+
+		if [ -z "$ADVERTISED_ROUTES" ]; then
+			echo "$WARNING No subnets selected for advertisement."
+		else
+			echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
+		fi
 	fi
 fi
 
 # 5. Create docker-compose.yml
 echo "$INFO Creating docker-compose.yml file..."
 if [ "$DUMMY_MODE" = true ]; then
-	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with dummy values."
+	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
+	cat <<-EOF
+	version: '3.8'
+	services:
+	  tailscale:
+	    container_name: tailscale
+	    image: tailscale/tailscale:latest
+	    hostname: ${TS_HOSTNAME}
+	    volumes:
+	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
+	      - "/dev/net/tun:/dev/net/tun"
+	    cap_add:
+	      - NET_ADMIN
+	      - SYS_MODULE
+	    environment:
+	      - TS_AUTHKEY=${TS_AUTHKEY}
+	      - TS_STATE_DIR=/var/lib/tailscale
+	      - TS_ACCEPT_ROUTES=true
+	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
+	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
+	    network_mode: host
+	    restart: unless-stopped
+elif [ "$TEST_MODE" = true ]; then
+	echo "[TEST MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
+	cat <<-EOF
+	version: '3.8'
+	services:
+	  tailscale:
+	    container_name: tailscale
+	    image: tailscale/tailscale:latest
+	    hostname: ${TS_HOSTNAME}
+	    volumes:
+	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
+	      - "/dev/net/tun:/dev/net/tun"
+	    cap_add:
+	      - NET_ADMIN
+	      - SYS_MODULE
+	    environment:
+	      - TS_AUTHKEY=${TS_AUTHKEY}
+	      - TS_STATE_DIR=/var/lib/tailscale
+	      - TS_ACCEPT_ROUTES=true
+	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
+	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
+	    network_mode: host
+	    restart: unless-stopped
+	EOF
 elif [ "$CONFIRM_MODE" = true ]; then
 	echo "The following docker-compose.yml will be created:"
 	cat <<-EOF
@@ -244,9 +329,9 @@ fi
 
 # 7. Start the container
 echo "$INFO Pulling the latest Tailscale image..."
-run_command sudo docker compose -f "$DOCKER_COMPOSE_FILE" pull
+docker_compose_command -f "$DOCKER_COMPOSE_FILE" pull
 echo "$INFO Starting the Tailscale container..."
-run_command sudo docker compose -f "$DOCKER_COMPOSE_FILE" up -d
+docker_compose_command -f "$DOCKER_COMPOSE_FILE" up -d
 
 # 8. Verify Container Status
 if [ "$TEST_MODE" = false ] && [ "$CONFIRM_MODE" = false ] && [ "$DUMMY_MODE" = false ]; then

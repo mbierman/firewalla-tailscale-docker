@@ -1,5 +1,5 @@
 #!/bin/bash
-# VERSION:1.0
+# VERSION:1.2.0
 set -e
 set -o pipefail
 
@@ -49,17 +49,24 @@ run_command() {
 	fi
 }
 
+# Function to determine and execute the correct docker compose command
+docker_compose_command() {
+	if docker compose version &>/dev/null; then
+		run_command sudo docker compose "$@"
+	elif docker-compose version &>/dev/null; then
+		run_command sudo docker-compose "$@"
+	else
+		echo "$ERROR Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."
+		exit 1
+	fi
+}
+
 echo "$INFO Starting Tailscale uninstallation (v$VERSION)..."
 
 # 1. Stop and remove the Docker container
 if [ -f "$DOCKER_COMPOSE_FILE" ]; then
 	echo "$INFO Stopping and removing Tailscale container..."
-	# Use 'docker compose' if available, otherwise fallback to 'docker-compose'
-	if docker compose version &>/dev/null; then
-		run_command sudo docker compose -f "$DOCKER_COMPOSE_FILE" down -v
-	else
-		run_command sudo docker-compose -f "$DOCKER_COMPOSE_FILE" down -v
-	fi
+	docker_compose_command -f "$DOCKER_COMPOSE_FILE" down -v
 	echo "$SUCCESS Tailscale container stopped and volumes removed."
 else
 	echo "$INFO docker-compose.yml not found. Skipping container removal."
