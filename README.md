@@ -1,63 +1,58 @@
-# Tailscale for Firewalla
+# Tailscale on Firewalla via Docker
 
 🎉 Easily install and manage Tailscale on your Firewalla device using Docker! This project provides a simple bash script to set up Tailscale, allowing your Firewalla to act as a subnet router for your entire network.
 
 ## ✨ Features
 
-*   **Automated Installation:** A single script handles Docker Compose setup, Tailscale container deployment, and IP forwarding configuration.
-*   **Subnet Routing:** Configure your Firewalla to advertise local subnets to your Tailscale network.
-*   **Exit Node Support:** Optionally configure your Firewalla as an exit node for your Tailscale network.
-*   **Easy Uninstallation:** A separate script to cleanly remove all Tailscale components.
-*   **Firewalla Friendly:** Designed to integrate seamlessly with Firewalla's existing Docker environment.
+*   **Easy Installation:** A single `curl` command to set up Tailscale.
+*   **Dockerized:** Runs Tailscale in a Docker container, minimizing interference with your Firewalla's system.
+*   **Subnet Routing:** Configures your Firewalla to advertise its local subnets to your Tailscale network.
+*   **Exit Node Support:** Option to configure your Firewalla as a Tailscale exit node.
+*   **Clean Uninstallation:** A separate script to completely remove Tailscale and its configurations.
+*   **Firewalla-friendly:** Designed to integrate seamlessly with Firewalla's existing Docker environment.
+
+## ⚠️ Important Note on Subnet Representation
+
+When configuring subnet routes, Firewalla typically displays network addresses with a host IP (e.g., `192.168.10.1/24`). However, Tailscale requires the network address to end in `.0` (e.g., `192.168.10.0/24`).
+
+This installer script automatically handles this conversion for you. When it discovers available subnets and asks if you want to advertise them, it will present them in the Tailscale-compatible `.0` format. You should approve these subnets as presented by the script.
 
 ## 🚀 Installation
 
-To install Tailscale on your Firewalla, simply run the following command in your Firewalla's SSH terminal:
+To install Tailscale on your Firewalla, follow these steps:
 
-```bash
-curl -sfL https://raw.githubusercontent.com/mbierman/tailscale-firewalla/main/github/install.sh | sudo bash
-```
+1.  **SSH into your Firewalla:**
+    ```bash
+    ssh pi@your_firewalla_ip
+    ```
 
-The script will:
-1.  **Prompt for a hostname** for your Tailscale node (e.g., `firewalla-ts`).
-2.  **Ask for your Tailscale Auth Key** (starts with `tskey-`). You can generate one from your [Tailscale admin console](https://login.tailscale.com/admin/settings/authkeys).
-3.  **Ask if you want to enable Exit Node functionality.**
-4.  **Discover available subnets** on your Firewalla and ask if you want to advertise them to your Tailscale network.
-5.  **Create the `docker-compose.yml`** file in `/home/pi/.firewalla/run/docker/tailscale`.
-6.  **Pull the Tailscale Docker image** and start the container.
-7.  **Enable IP forwarding** persistently on your Firewalla.
+2.  **Run the installation script:**
+    ```bash
+    curl -sL https://raw.githubusercontent.com/mbierman/tailscale-firewalla-docker/main/install.sh | sudo bash
+    ```
+    The script will guide you through the setup process, asking for a hostname, your Tailscale Auth Key, and which subnets you'd like to advertise.
 
-### ⚠️ Important Post-Installation Steps
-
-After the installation is complete, you **must** authorize the subnet routes in your Tailscale admin console:
-
-1.  Go to your Tailscale Admin Console: [https://login.tailscale.com/admin/machines](https://login.tailscale.com/admin/machines)
-2.  Find the device corresponding to the hostname you provided during installation.
-3.  Click the `...` menu next to the device and select `Edit route settings...`.
-4.  Enable the advertised subnet route(s) to allow access to your local network via Tailscale.
+3.  **Authorize Subnet Routes in Tailscale Admin Console:**
+    After installation, you **must** authorize the subnet routes in your Tailscale admin console.
+    *   Go to [https://login.tailscale.com/admin/machines](https://login.tailscale.com/admin/machines)
+    *   Find your Firewalla device (using the hostname you provided during installation).
+    *   Click the "..." menu next to your device and select "Edit route settings...".
+    *   Approve the subnet route(s) that correspond to your local network(s).
 
 ## 🗑️ Uninstallation
 
-To remove Tailscale from your Firewalla, run the uninstall script:
+To completely remove Tailscale from your Firewalla, run the uninstall script:
 
 ```bash
 sudo /data/tailscale-uninstall.sh
 ```
 
-The uninstall script will:
-1.  Stop and remove the Tailscale Docker container and its associated volumes.
-2.  Remove the Tailscale configuration and data directories.
-3.  Remove the persistent IP forwarding configuration.
-4.  Remove the uninstall script itself.
+This will stop and remove the Docker container, delete all associated files and directories, and revert any system-level changes made by the installer.
 
-### 🧹 Manual Cleanup (if necessary)
+## 🛠️ Development & Contribution
 
-If the uninstall script encounters issues, you may need to manually remove the device from your [Tailscale admin console](https://login.tailscale.com/admin/machines).
-
-## 🤝 Contributing
-
-Contributions are welcome! If you have suggestions for improvements or bug fixes, please open an issue or submit a pull request.
+(Placeholder for future development and contribution guidelines)
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

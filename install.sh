@@ -25,7 +25,7 @@ TAILSCALE_DATA_DIR="/data/tailscale"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/tailscale-firewalla"
-LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRKVTVS5V2IXDXB4OSU2IRFSVA"
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRLSR62ESXETFMCX5AI2IRGXHQ"
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
 # --- Command-line flags ---
@@ -83,9 +83,54 @@ docker_compose_command() {
 	fi
 }
 
+# Function to convert subnet from Firewalla format (e.g., 192.168.0.1/24) to Tailscale format (e.g., 192.168.0.0/24)
+convert_subnet_to_tailscale_format() {
+	local subnet="$1"
+	# Extract the IP address and CIDR
+	local ip_address=$(echo "$subnet" | cut -d'/' -f1)
+	local cidr=$(echo "$subnet" | cut -d'/' -f2)
+
+	# Replace the last octet of the IP address with 0
+	local network_address=$(echo "$ip_address" | awk -F'.' '{print $1"."$2"."$3".0"}')
+
+	echo "${network_address}/${cidr}"
+}
+
 # Function to get available subnets from bridge interfaces
 get_available_subnets() {
 	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $4}'
+}
+
+# Function to generate docker-compose.yml content
+generate_docker_compose_yml() {
+	local hostname="$1"
+	local authkey="$2"
+	local advertised_routes="$3"
+	local extra_args="$4"
+	local data_dir="$5"
+
+	cat <<-EOF
+	version: '3.8'
+	services:
+	  tailscale:
+	    container_name: tailscale
+	    image: tailscale/tailscale:latest
+	    hostname: ${hostname}
+	    volumes:
+	      - "${data_dir}:/var/lib/tailscale"
+	      - "/dev/net/tun:/dev/net/tun"
+	    cap_add:
+	      - NET_ADMIN
+	      - SYS_MODULE
+	    environment:
+	      - TS_AUTHKEY=${authkey}
+	      - TS_STATE_DIR=/var/lib/tailscale
+	      - TS_ACCEPT_ROUTES=true
+	      - TS_ADVERTISE_ROUTES=${advertised_routes}
+	      - TS_EXTRA_ARGS=--accept-dns=true ${extra_args}
+	    network_mode: host
+	    restart: unless-stopped
+	EOF
 }
 
 # --- Script Start ---
@@ -167,17 +212,18 @@ if [ "$DUMMY_MODE" = false ]; then
 	else
 		ADVERTISED_ROUTES=""
 		for subnet in "${AVAILABLE_SUBNETS[@]}"; do
-read -p "$INFO Do you want to advertise the subnet $subnet? (y/N): " ADVERTISE_SUBNET
-if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
-    if [ -z "$ADVERTISED_ROUTES" ]; then
-        ADVERTISED_ROUTES="$subnet"
-    else
-        ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$subnet"
-    fi
-    echo "$SUCCESS Subnet $subnet will be advertised."
-else
-    echo "$INFO Subnet $subnet will NOT be advertised."
-fi
+			# Convert Firewalla's subnet format (e.g., 192.168.0.1/24) to Tailscale's (e.g., 192.168.0.0/24)
+							tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")			read -p "$INFO Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET
+			if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
+				if [ -z "$ADVERTISED_ROUTES" ]; then
+					ADVERTISED_ROUTES="$tailscale_subnet"
+				else
+					ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
+				fi
+				echo "$SUCCESS Subnet $tailscale_subnet will be advertised."
+			else
+				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
+			fi
 		done
 
 		if [ -z "$ADVERTISED_ROUTES" ]; then
@@ -192,127 +238,24 @@ fi
 echo "$INFO Creating docker-compose.yml file..."
 if [ "$DUMMY_MODE" = true ]; then
 	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
-	cat <<-EOF
-	version: '3.8'
-	services:
-	  tailscale:
-	    container_name: tailscale
-	    image: tailscale/tailscale:latest
-	    hostname: ${TS_HOSTNAME}
-	    volumes:
-	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
-	      - "/dev/net/tun:/dev/net/tun"
-	    cap_add:
-	      - NET_ADMIN
-	      - SYS_MODULE
-	    environment:
-	      - TS_AUTHKEY=${TS_AUTHKEY}
-	      - TS_STATE_DIR=/var/lib/tailscale
-	      - TS_ACCEPT_ROUTES=true
-	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
-	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
-	    network_mode: host
-	    restart: unless-stopped
+	generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}"
 elif [ "$TEST_MODE" = true ]; then
 	echo "[TEST MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
-	cat <<-EOF
-	version: '3.8'
-	services:
-	  tailscale:
-	    container_name: tailscale
-	    image: tailscale/tailscale:latest
-	    hostname: ${TS_HOSTNAME}
-	    volumes:
-	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
-	      - "/dev/net/tun:/dev/net/tun"
-	    cap_add:
-	      - NET_ADMIN
-	      - SYS_MODULE
-	    environment:
-	      - TS_AUTHKEY=${TS_AUTHKEY}
-	      - TS_STATE_DIR=/var/lib/tailscale
-	      - TS_ACCEPT_ROUTES=true
-	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
-	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
-	    network_mode: host
-	    restart: unless-stopped
-	EOF
+	generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}"
 elif [ "$CONFIRM_MODE" = true ]; then
+	COMPOSE_CONTENT=$(generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}")
 	echo "The following docker-compose.yml will be created:"
-	cat <<-EOF
-	version: '3.8'
-	services:
-	  tailscale:
-	    container_name: tailscale
-	    image: tailscale/tailscale:latest
-	    hostname: ${TS_HOSTNAME}
-	    volumes:
-	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
-	      - "/dev/net/tun:/dev/net/tun"
-	    cap_add:
-	      - NET_ADMIN
-	      - SYS_MODULE
-	    environment:
-	      - TS_AUTHKEY=${TS_AUTHKEY}
-	      - TS_STATE_DIR=/var/lib/tailscale
-	      - TS_ACCEPT_ROUTES=true
-	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
-	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
-	    network_mode: host
-	    restart: unless-stopped
-	EOF
+	echo "${COMPOSE_CONTENT}"
 	read -p "Create this file? [y/N] " -n 1 -r
 	echo
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null <<-EOF
-		version: '3.8'
-		services:
-		  tailscale:
-		    container_name: tailscale
-		    image: tailscale/tailscale:latest
-		    hostname: ${TS_HOSTNAME}
-		    volumes:
-		      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
-		      - "/dev/net/tun:/dev/net/tun"
-		    cap_add:
-		      - NET_ADMIN
-		      - SYS_MODULE
-		    environment:
-		      - TS_AUTHKEY=${TS_AUTHKEY}
-		      - TS_STATE_DIR=/var/lib/tailscale
-		      - TS_ACCEPT_ROUTES=true
-		      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
-		      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
-		    network_mode: host
-		    restart: unless-stopped
-		EOF
+		echo "${COMPOSE_CONTENT}" | sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null
 		echo "$SUCCESS docker-compose.yml created."
 	else
 		echo "Skipping docker-compose.yml creation."
 	fi
 else
-	sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null <<-EOF
-	version: '3.8'
-	services:
-	  tailscale:
-	    container_name: tailscale
-	    image: tailscale/tailscale:latest
-	    hostname: ${TS_HOSTNAME}
-	    volumes:
-	      - "${TAILSCALE_DATA_DIR}:/var/lib/tailscale"
-	      - "/dev/net/tun:/dev/net/tun"
-	    cap_add:
-	      - NET_ADMIN
-	      - SYS_MODULE
-	    environment:
-	      - TS_AUTHKEY=${TS_AUTHKEY}
-	      - TS_STATE_DIR=/var/lib/tailscale
-	      - TS_ACCEPT_ROUTES=true
-	      - TS_ADVERTISE_ROUTES=${ADVERTISED_ROUTES}
-	      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS}
-	    network_mode: host
-	    restart: unless-stopped
-	EOF
+	generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}" | sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null
 	echo "$SUCCESS docker-compose.yml created."
 fi
 
@@ -369,4 +312,4 @@ echo "3. Click the '...' menu and select 'Edit route settings...'."
 echo "4. Approve the subnet route(s) for '${ADVERTISED_ROUTES}' to access your local network."
 echo ""
 echo "$INFO You can run the uninstaller later with: sudo $UNINSTALL_SCRIPT"
-echo ""
+echo "
