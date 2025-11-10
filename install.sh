@@ -3,11 +3,12 @@ set -e
 set -o pipefail
 
 # Emoji for user-facing output
-INFO="ℹ️"
-SUCCESS="✅"
-WARNING="⚠️"
-ERROR="❌"
-VERSION="1.2.0" 
+INFO="ℹ️ "
+QUESTION="❔" 
+SUCCESS="✅ "
+WARNING="⚠️ "
+ERROR="❌ "
+VERSION="1.2.0 " 
 
 # Function to check if a URL exists
 check_url_exists() {
@@ -25,13 +26,14 @@ TAILSCALE_DATA_DIR="/data/tailscale"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/tailscale-firewalla"
-LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/uninstall.sh?token=GHSAT0AAAAAADNA3IRLSR62ESXETFMCX5AI2IRGXHQ"
+LATEST_UNINSTALL_SCRIPT_URL="https://gist.githubusercontent.com/mbierman/c5a0bbac7e9c7da4d6e74c329a3a953f/raw/a53738296f23fffa8fd839fb843d7fe9ce871f26/tailscale_uninstall.sh"
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
 # --- Command-line flags ---
 TEST_MODE=false
 CONFIRM_MODE=false
 DUMMY_MODE=false
+# TS_EXTRA_ARGS="-accept-dns=true " # Initialize TS_EXTRA_ARGS
 TS_EXTRA_ARGS="" # Initialize TS_EXTRA_ARGS
 
 while getopts "tcd" opt; do
@@ -123,20 +125,40 @@ generate_docker_compose_yml() {
 	      - NET_ADMIN
 	      - SYS_MODULE
 	    environment:
-	      - TS_AUTHKEY=${authkey}
-	      - TS_STATE_DIR=/var/lib/tailscale
-	      - TS_ACCEPT_ROUTES=true
-	      - TS_ADVERTISE_ROUTES=${advertised_routes}
-	      - TS_EXTRA_ARGS=--accept-dns=true ${extra_args}
+           - TS_ACCEPT_DNS=true
+           - TS_USERSPACE=false
+           - TS_ROUTES=${advertised_routes}
+           - TS_AUTHKEY=${authkey}
+           - TS_STATE_DIR=/var/lib/tailscale
+           - TS_ACCEPT_ROUTES=true
+           - TS_EXTRA_ARGS=--accept-routes ${TS_EXTRA_ARGS} 
 	    network_mode: host
 	    restart: unless-stopped
 	EOF
 }
+          # REMOVE
+          # - TS_ADVERTISE_ROUTES=${advertised_routes}
+          # - TS_EXTRA_ARGS=--advertise-routes=192.168.1.0/24 --advertise-exit-node --accept-dns=true
+	     # - TS_EXTRA_ARGS=--accept-routes ${TS_EXTRA_ARGS} --advertise-routes=${advertised_routes}
 
 # --- Script Start ---
 
 echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
-# 1. Install/Update Uninstall Script
+
+# 1. Enable IP Forwarding
+echo "$INFO Enabling persistent IP forwarding..."
+if [ ! -f "$SYSCTL_CONF_FILE" ] && { [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; }; then
+     run_command echo "net.ipv4.ip_forward=1"
+     run_command echo "net.ipv6.conf.all.forwarding=1"
+elif [ ! -f "$SYSCTL_CONF_FILE" ] && { [ "$TEST_MODE" = false ] && [ "$CONFIRM_MODE" = false ]; }; then
+    run_command echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a "$SYSCTL_CONF_FILE" > /dev/null
+     run_command echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a "$SYSCTL_CONF_FILE" > /dev/null
+elif [ -f "$SYSCTL_CONF_FILE" ]; then
+    echo "$INFO IP forwarding configuration already exists."
+fi
+
+
+# 2. Install/Update Uninstall Script
 echo "$INFO Checking for uninstall script..."
 LOCAL_VERSION=""
 
@@ -163,12 +185,13 @@ else
 	echo "$SUCCESS Uninstall script is already up to date (v$LOCAL_VERSION)."
 fi
 
-# 2. Create Directories
+# 3. Create Directories
 echo "$INFO Creating directories..."
 run_command sudo mkdir -p "$TAILSCALE_DIR" "$TAILSCALE_DATA_DIR"
+sudo chown pi:pi "$TAILSCALE_DIR" "$TAILSCALE_DATA_DIR"
 echo "$SUCCESS Directories created."
 
-# 3. Gather User Input
+# 4. Gather User Input
 if [ "$DUMMY_MODE" = true ]; then
 	# Dummy data for -d flag
 	echo "[DEV MODE] Skipping user input and using dummy data."
@@ -178,12 +201,12 @@ if [ "$DUMMY_MODE" = true ]; then
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
 	# Hostname
-	read -p "$INFO Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME
+	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME
 	TS_HOSTNAME=${TS_HOSTNAME:-ts-firewalla}
 
 	#  Tailscale Auth Key
 	while true; do
-		read -p "$INFO Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY
+		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY
 		if [[ "$TS_AUTHKEY" == tskey-* ]]; then
 			break
 		else
@@ -192,49 +215,61 @@ else
 	done
 
 	# Exit Node
-	read -p "$INFO Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
+	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
 	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
 		TS_EXTRA_ARGS="--exit-node --exit-node-allow-lan-access"
-		echo "$INFO This device will be configured as an exit node."
+		echo "$QUESTION This device will be configured as an exit node."
 	else
 		TS_EXTRA_ARGS=""
 		echo "$INFO This device will not be configured as an exit node."
 	fi
+         #  TS_EXTRA_ARGS="-accept-dns=true ${TS_EXTRA_ARGS}"    
 fi
 
-# 4. Discover and set subnets
+# 5. Discover and set subnets
 echo "$INFO Discovering available subnets..."
 if [ "$DUMMY_MODE" = false ]; then
-	AVAILABLE_SUBNETS=($(get_available_subnets))
-	if [ ${#AVAILABLE_SUBNETS[@]} -eq 0 ]; then
-		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
-		ADVERTISED_ROUTES=""
-	else
-		ADVERTISED_ROUTES=""
-		for subnet in "${AVAILABLE_SUBNETS[@]}"; do
-			# Convert Firewalla's subnet format (e.g., 192.168.0.1/24) to Tailscale's (e.g., 192.168.0.0/24)
-							tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")			read -p "$INFO Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET
-			if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
-				if [ -z "$ADVERTISED_ROUTES" ]; then
-					ADVERTISED_ROUTES="$tailscale_subnet"
-				else
-					ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
-				fi
-				echo "$SUCCESS Subnet $tailscale_subnet will be advertised."
-			else
-				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
-			fi
-		done
+    # Read subnets line by line into an array
+    readarray -t AVAILABLE_SUBNETS < <(get_available_subnets)
 
-		if [ -z "$ADVERTISED_ROUTES" ]; then
-			echo "$WARNING No subnets selected for advertisement."
-		else
-			echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
-		fi
-	fi
+    if [ "${#AVAILABLE_SUBNETS[@]}" -eq 0 ]; then
+        echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
+        ADVERTISED_ROUTES=""
+    else
+        ADVERTISED_ROUTES=""
+        for subnet in "${AVAILABLE_SUBNETS[@]}"; do
+            # Trim whitespace just in case
+            subnet=$(echo "$subnet" | xargs)
+            tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
+
+            # Default to N if non-interactive
+            if [ -t 0 ]; then
+                read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET
+            else
+                ADVERTISE_SUBNET="N"
+            fi
+
+            if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
+                if [ -z "$ADVERTISED_ROUTES" ]; then
+                    ADVERTISED_ROUTES="$tailscale_subnet"
+                else
+                    ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
+                fi
+                echo "$SUCCESS Subnet $tailscale_subnet will be advertised."
+            else
+                echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
+            fi
+        done
+
+        if [ -z "$ADVERTISED_ROUTES" ]; then
+            echo "$WARNING No subnets selected for advertisement."
+        else
+            echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
+        fi
+    fi
 fi
 
-# 5. Create docker-compose.yml
+# 6. Create docker-compose.yml
 echo "$INFO Creating docker-compose.yml file..."
 if [ "$DUMMY_MODE" = true ]; then
 	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
@@ -259,16 +294,6 @@ else
 	echo "$SUCCESS docker-compose.yml created."
 fi
 
-# 6. Enable IP Forwarding
-echo "$INFO Enabling persistent IP forwarding..."
-if [ ! -f "$SYSCTL_CONF_FILE" ] || [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
-	run_command echo "net.ipv4.ip_forward=1" | sudo tee "$SYSCTL_CONF_FILE" > /dev/null
-	run_command echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a "$SYSCTL_CONF_FILE" > /dev/null
-	run_command sudo sysctl -p "$SYSCTL_CONF_FILE"
-	echo "$SUCCESS IP forwarding enabled and made persistent."
-else
-	echo "$INFO IP forwarding configuration already exists."
-fi
 
 # 7. Start the container
 echo "$INFO Pulling the latest Tailscale image..."
