@@ -17,9 +17,9 @@ It also integrates seamlessly across all your devices. You don’t need to confi
 
 Finally, you don’t have to keep switching VPN software to connect different devices. Everything uses the same credentials and rules, making device-to-device access consistent and hassle-free.
 
-**Bottom line:** Tailscale provides a unified, always-on private network that just works—no public IP, no complex VPN setup, and no juggling multiple clients.
+**Bottom line:** Tailscale provides a unified, always-on private network that _just works_—no public IP, no complex VPN setup, and no juggling multiple clients.
 
-Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Problem solved!
+Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Problem solved! 
 
 ## ✨ Features of this script
 
