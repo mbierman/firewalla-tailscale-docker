@@ -42,7 +42,7 @@ This installer script automatically handles this conversion for you. When it dis
 ### Required
 *   **A Firewalla device (only tested on Gold series for now).** 
 *   **An active [Tailscale account](https://login.tailscale.com/start).**
-*   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**. For more information, see [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/).
+*   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**.
 ### Recommended
 *   **A dedicated VLAN for Tailscale.** For enhanced security and control, I recommend creating a dedicated VLAN on your Firewalla for Tailscale. This creates a secure "landing zone" for all incoming Tailscale traffic, which you can then control with Firewalla's firewall rules. Using a VLAN also avoids consuming your Firewalla's port assignments in the same way a separate physical network might.
     *   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
@@ -96,6 +96,27 @@ After the installation script completes, you **must** perform the following step
 3.  **Enable Exit Node (if chosen):** If you chose to use your Firewalla as an exit node, you **must** enable it. In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**. Then, enable the `Use as exit node` toggle.
 
 Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices. For more information, see the [Tailscale documentation on exit nodes](https://tailscale.com/kb/1019/subnets#exit-nodes).
+
+### ⚙️ Configure Tailscale Dashboard
+
+1. To create an athorization key, go to [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/). and find Settings (1), Keys (2) , Generate Auth Key (3) 
+<img src="assets/Key.jpg" alt="Find Keys" width="800"/>
+
+2. Give a name for your firewalla (1), choose Reusable so it won't expire each time you start your docker and Gnerarte. 
+<img src="assets/Key%202.jpg" alt="Create Key" width="400"/>
+
+3. Run the script
+
+   GEMENI Move the instructions here. 
+
+<img src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
+
+6. Approve the Route
+<img src="assets/Routes.jpg" alt="Approve routes" width="400"/>
+
+5. Check that you ad a name server for firewalla. Usually this matches the LAN for example, if you are adding 192.168.5.0/24, the DNS server would be 192.168.5.1 (1). Choose Split DMS (2) amd Override DNS server (3)
+<img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
+
 
 ## 🗑️ Uninstallation
 
