@@ -50,14 +50,14 @@ This installer script automatically handles this conversion for you. When it dis
 ## 📝 Preparation
 
 ### Required
-    *   **A Firewalla device (only tested on Gold series for now).** 
-    *   **An active [Tailscale account](https://login.tailscale.com/start).**
-    *   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**.
+*   **A Firewalla device (only tested on Gold series for now).** 
+*   **An active [Tailscale account](https://login.tailscale.com/start).**
+*   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**.
 
 ### Recommended
-    *   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
-    *   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
-    *   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
+*   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
+*   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
+*   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
 
     Alternatively, if you prefer not to create a new tailscale VLAN, you can use existing LANs or VLANs. In this case, the script will present your existing subnets and allow you to advertise them. Any networks you choose will be directly accessible from tailscale so do this with caution. 
 
