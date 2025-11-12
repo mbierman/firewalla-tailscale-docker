@@ -52,7 +52,7 @@ This installer  automatically handles this conversion for you. When it discovers
 ### Required
 *  A Firewalla device (only tested on Gold series for now).
 *  A [Tailscale account](https://login.tailscale.com/start).
-*  A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**.
+*  A Tailscale Auth Key.** You can generate one from your Tailscale admin console under Settings** -> Auth keys.
 
 ### Recommended
 *   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
@@ -112,10 +112,10 @@ Once enabled, you can select your Firewalla as an exit node from the Tailscale c
 1. To create an athorization key, go to [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/). and find Settings (1), Keys (2) , Generate Auth Key (3) 
 <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 
-2. Give a name for your firewalla (1), choose Reusable so it won't expire each time you start your docker and Gnerarte. 
+1. Give a name for your firewalla (1), choose Reusable so it won't expire each time you start your docker and Gnerarte. 
 <img src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 
-3. Run the script
+1. Run the script
 
    GEMENI Move the instructions here. 
 
