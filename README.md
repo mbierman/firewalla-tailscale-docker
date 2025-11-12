@@ -42,7 +42,7 @@ GEMINI: Add a bit here explaining that the script currently assumes a split-tunn
 
 This installer  automatically handles this conversion for you. When it discovers available subnets and asks if you want to advertise them, it will present them in the Tailscale-compatible `.0` format. 
 
-### other Notes
+### Other Notes
 * Tailscale has a lot of options. Thos installer doesn't try to account for every possible configuration parameter. if there are requests, I might add in the future, but this will get you started.
 
 * Only tested on Gold in Router mode. Should work on Purple too.
