@@ -24,7 +24,7 @@ Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Pro
 ## ✨ Features of this script
 
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
-*   **Automatic Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
+*   **Automated Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
 *   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node.
 *   **Clean Uninstallation:** A dedicated script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
