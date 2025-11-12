@@ -83,7 +83,7 @@ Based on your answers, the script will automatically create your `docker-compose
 
 The `install.sh` script includes the following flags for more controlled execution:
 
-*   **Test Mode (`-t`):** Run the script in test mode to see which commands would be executed without actually making any changes. This is useful for testing and understanding what the script will do before you run it. This is only a test! 
+*   **Test Mode (`-t`):** Run the script in "dry run" mode to see which commands would be executed without actually making any changes. This is useful for testing and understanding what the script will do before you run it. This is only a test! 
 
     ```bash
     # replace URL
