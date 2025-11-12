@@ -107,7 +107,7 @@ Once enabled, you can select your Firewalla as an exit node from the Tailscale c
 <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 
 2. Give a name for your firewalla (1), choose Reusable so it won't expire each time you start your docker and Gnerarte. 
-<img src="assets/Key%202.jpg" alt="Create Key" width="400"/>
+<img src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 
 3. Run the script
 
