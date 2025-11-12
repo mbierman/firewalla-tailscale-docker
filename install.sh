@@ -2,6 +2,8 @@
 set -e
 set -o pipefail
 
+#GEMENI where is the dummy data? 
+
 # Emoji for user-facing output
 INFO="ℹ️ "
 QUESTION="❔" 
@@ -31,10 +33,10 @@ LATEST_UNINSTALL_SCRIPT_URL="https://gist.githubusercontent.com/mbierman/c5a0bba
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
 # --- Command-line flags ---
-TEST_MODE=false
-CONFIRM_MODE=false
+TEST_MODE=false    # Test, but doesn't do anything
+CONFIRM_MODE=false # Ask before doing 
 DUMMY_MODE=false
-TS_EXTRA_ARGS="" # Initialize TS_EXTRA_ARGS
+TS_EXTRA_ARGS=""   # Initialize TS_EXTRA_ARGS
 
 while getopts "tcd" opt; do
 	case ${opt} in
@@ -124,7 +126,7 @@ EOF
 
 }
 
-# Function to generate start.sh content
+# Function to generate tailscale-start.sh content
 generate_tailscale_start () {
 # Ensure variables are local and correctly set from function arguments
 	local hostname="$1"
@@ -191,7 +193,7 @@ for iface in $selected_interfaces; do
 	fi
 done
 
-# Re-run docker-compose up -d as requested
+# Re-run docker-compose up -d
 docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
 
 # Wait a few seconds for tailscaled to initialize
@@ -276,6 +278,7 @@ else
 			echo "$ERROR Invalid format. The Auth Key must start with 'tskey-'."
 		fi
 	done
+	
 # no EXTRA ARGS for now. Maybe bring it back later for exit node, etc. 
 # 	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
 # 	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
