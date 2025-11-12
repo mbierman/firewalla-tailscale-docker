@@ -9,7 +9,7 @@ Firewalla includes a no-subscription VPN including:
 *   **[VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server):** allows you to access devices on your Firewalla-network when you are away.
 *   **[VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client):** allows your Firealla to connect to another VPN server so your devices don't have to. Want to run your Apple TV through a VPN? just assign it to the VPN client.
 
-Which is amazing. Why do I need tailscale? So _why tailscale_? There are a many [possible answers](https://www.reddit.com/r/firewalla/comments/1l64s6w/why_is_firewalla_silent_about_tailscale/) to this.
+Which is amazing. So _why tailscale_? There are a many [possible answers](https://www.reddit.com/r/firewalla/comments/1l64s6w/why_is_firewalla_silent_about_tailscale/) to this.
 
 Tailscale is appealing because it works even if your ISP doesn’t give you a public IP. Many ISPs now place users behind Carrier-Grade NAT (CGNAT), making traditional VPNs like Firewalla’s difficult or impossible to set up. Tailscale handles this automatically, so you can connect to your home network from anywhere, even without a public IP.
 
