@@ -73,9 +73,9 @@ curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 
 The script is interactive and will guide you through the following steps:
 
-#.  Enter your **Tailscale Auth Key:** You will be prompted to enter your auth key. [[tailscale docs](https://tailscale.com/kb/1085/auth-keys/)]
-#.  Choose **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
-#.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node. An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN. This isn't needed if you just want to access your devices remotely. 
+1. Enter your **Tailscale Auth Key:** You will be prompted to enter your auth key. [[tailscale docs](https://tailscale.com/kb/1085/auth-keys/)]
+1.  Choose **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
+1.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node. An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN. This isn't needed if you just want to access your devices remotely. 
 
 Based on your answers, the script will automatically create your `docker-compose.yml` file, pull the container image, and start Tailscale for you. It will persist reboots and firewalla updates but not if you flash your firewalla. 
 
@@ -101,9 +101,9 @@ The `install.sh` script includes the following flags for more controlled executi
 
 After the installation script completes, you **must** perform the following steps in your Tailscale admin console:
 
-#.  **Authorize Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) and authorize your newly added Firewalla device.
-2#.  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
-#.  **Enable Exit Node (if chosen):** If you chose to use your Firewalla as an exit node, you **must** enable it. In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**. Then, enable the `Use as exit node` toggle.
+1.  **Authorize Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) and authorize your newly added Firewalla device.
+1..  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
+1.  **Enable Exit Node (if chosen):** If you chose to use your Firewalla as an exit node, you **must** enable it. In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**. Then, enable the `Use as exit node` toggle.
 
 Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices. For more information, see the [Tailscale documentation on exit nodes](https://tailscale.com/kb/1019/subnets#exit-nodes).
 
