@@ -26,7 +26,7 @@ Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Pro
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
 *   **Automated Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
 *   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node.
-*   **Clean Uninstallation:** A dedicated script to remove all traces of the Tailscale Docker setup.
+*   **Clean Uninstallation:** Remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 
@@ -36,12 +36,13 @@ GEMINI: Add a bit here explaining that the script currently assumes a split-tunn
 
 ## ⚠️ Important Notes
 
-on Subnet Representation
+### On Subnet Representation
 
 * When configuring subnet routes, Firewalla typically displays network addresses with a host IP (e.g., `192.168.10.1/24`). However, Tailscale requires the network address to end in `.0` (e.g., `192.168.10.0/24`).
 
-This installer script automatically handles this conversion for you. When it discovers available subnets and asks if you want to advertise them, it will present them in the Tailscale-compatible `.0` format. You should approve these subnets as presented by the script.
+This installer  automatically handles this conversion for you. When it discovers available subnets and asks if you want to advertise them, it will present them in the Tailscale-compatible `.0` format. 
 
+### other Notes
 * Tailscale has a lot of options. Thos installer doesn't try to account for every possible configuration parameter. if there are requests, I might add in the future, but this will get you started.
 
 * Only tested on Gold in Router mode. Should work on Purple too.
