@@ -23,6 +23,7 @@ check_url_exists() {
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
 TAILSCALE_DATA_DIR="/data/tailscale"
+START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/tailscale-firewalla"
@@ -33,7 +34,6 @@ check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 TEST_MODE=false
 CONFIRM_MODE=false
 DUMMY_MODE=false
-# TS_EXTRA_ARGS="-accept-dns=true " # Initialize TS_EXTRA_ARGS
 TS_EXTRA_ARGS="" # Initialize TS_EXTRA_ARGS
 
 while getopts "tcd" opt; do
@@ -100,111 +100,174 @@ convert_subnet_to_tailscale_format() {
 
 # Function to get available subnets from bridge interfaces
 get_available_subnets() {
-	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $4}'
+	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $2, $4}'
 }
 
-# Function to generate docker-compose.yml content
+# Function to generate docker-compose.yml
+
+
 generate_docker_compose_yml() {
+cat <<-EOF
+version: "3.9"
+services:
+  tailscale:
+    container_name: tailscale
+    image: tailscale/tailscale:latest
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - ${TAILSCALE_DATA_DIR}:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    command: tailscaled --tun=userspace-networking
+EOF
+
+}
+
+# Function to generate start.sh content
+generate_tailscale_start () {
+# Ensure variables are local and correctly set from function arguments
 	local hostname="$1"
-	local authkey="$2"
-	local advertised_routes="$3"
+    local authkey="$2"
+    local advertised_routes="$3"
 	local extra_args="$4"
 	local data_dir="$5"
+	local selected_interfaces="$6"
+	local DOCKER_COMPOSE_FILE="$7"
+	local TEST_MODE="$8"
+	local CONFIRM_MODE="$9"
+	local DUMMY_MODE="${10}"
 
-	cat <<-EOF
-	version: '3.8'
-	services:
-	  tailscale:
-	    container_name: tailscale
-	    image: tailscale/tailscale:latest
-	    hostname: ${hostname}
-	    volumes:
-	      - "${data_dir}:/var/lib/tailscale"
-	      - "/dev/net/tun:/dev/net/tun"
-	    cap_add:
-	      - NET_ADMIN
-	      - SYS_MODULE
-	    environment:
-           - TS_ACCEPT_DNS=true
-           - TS_USERSPACE=false
-           - TS_ROUTES=${advertised_routes}
-           - TS_AUTHKEY=${authkey}
-           - TS_STATE_DIR=/var/lib/tailscale
-           - TS_ACCEPT_ROUTES=true
-           - TS_EXTRA_ARGS=--accept-routes ${TS_EXTRA_ARGS} 
-	    network_mode: host
-	    restart: unless-stopped
-	EOF
+# The script content generated below uses the local variables above
+cat <<-EOF
+#!/bin/bash
+set -e
+
+TEST_MODE=${TEST_MODE}
+CONFIRM_MODE=${CONFIRM_MODE}
+DUMMY_MODE=${DUMMY_MODE}
+
+# Function to execute or display commands
+run_command() {
+	if [ "\$DUMMY_MODE" = true ]; then
+		echo "[DEV MODE] Would run: \$@"
+	elif [ "\$TEST_MODE" = true ]; then
+		echo "[TEST MODE] Would run: \$@"
+	elif [ "\$CONFIRM_MODE" = true ]; then
+		read -p "Run this command? '\$@' [y/N] " -n 1 -r
+		echo
+		if [[ \$REPLY =~ ^[Yy]$ ]]; then
+			"\$@"
+		else
+			echo "Skipping command."
+		fi
+	else
+		"\$@"
+	fi
 }
-          # REMOVE
-          # - TS_ADVERTISE_ROUTES=${advertised_routes}
-          # - TS_EXTRA_ARGS=--advertise-routes=192.168.1.0/24 --advertise-exit-node --accept-dns=true
-	     # - TS_EXTRA_ARGS=--accept-routes ${TS_EXTRA_ARGS} --advertise-routes=${advertised_routes}
+
+# Function to determine and execute the correct docker compose command
+docker_compose_command() {
+	if docker compose version &>/dev/null; then
+		run_command sudo docker compose "\$@"
+	elif docker-compose version &>/dev/null; then
+		run_command sudo docker-compose "\$@"
+	else
+		echo "Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."
+		exit 1
+	fi
+}
+
+# Start the container (First run)
+docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
+
+# Add NAT rule(s)
+for iface in $selected_interfaces; do
+	if ! sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE 2>/dev/null; then
+		echo "Creating iptable NAT rule for \$iface..."
+		run_command sudo iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE
+	else
+		echo "IP table NAT rule for \$iface already in place."
+	fi
+done
+
+# Re-run docker-compose up -d as requested
+docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
+
+# Wait a few seconds for tailscaled to initialize
+sleep 3
+
+# Bring Tailscale online with your auth key and configuration
+run_command sudo docker exec tailscale tailscale up \\
+	--authkey="${authkey}" \\
+	--hostname="${hostname}" \\
+	--advertise-routes="${advertised_routes}" \\
+	--accept-routes \\
+	--accept-dns \\
+	--reset
+EOF
+}
 
 # --- Script Start ---
 
 echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
 
-# 1. Enable IP Forwarding
+# --- Section 1: IP Forwarding ---
 echo "$INFO Enabling persistent IP forwarding..."
-if [ ! -f "$SYSCTL_CONF_FILE" ] && { [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; }; then
-     run_command echo "net.ipv4.ip_forward=1"
-     run_command echo "net.ipv6.conf.all.forwarding=1"
-elif [ ! -f "$SYSCTL_CONF_FILE" ] && { [ "$TEST_MODE" = false ] && [ "$CONFIRM_MODE" = false ]; }; then
-    run_command echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a "$SYSCTL_CONF_FILE" > /dev/null
-     run_command echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a "$SYSCTL_CONF_FILE" > /dev/null
-elif [ -f "$SYSCTL_CONF_FILE" ]; then
-    echo "$INFO IP forwarding configuration already exists."
+if [ ! -f "$SYSCTL_CONF_FILE" ]; then
+	if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
+		run_command echo "net.ipv4.ip_forward=1"
+		# run_command echo "net.ipv6.conf.all.forwarding=1"
+	else
+		sudo mkdir -p "$(dirname "$SYSCTL_CONF_FILE")"
+		sudo bash -c "echo 'net.ipv4.ip_forward=1' >> '$SYSCTL_CONF_FILE'"
+		sudo bash -c "echo 'net.ipv6.conf.all.forwarding=1' >> '$SYSCTL_CONF_FILE'"
+		sudo sysctl --system
+		echo "$SUCCESS IP forwarding enabled and applied."
+	fi
+else
+	echo "$INFO IP forwarding configuration already exists."
 fi
 
-
-# 2. Install/Update Uninstall Script
+# --- Section 2: Uninstall Script ---
 echo "$INFO Checking for uninstall script..."
 LOCAL_VERSION=""
-
-# Get local version if available
 if [ -f "$UNINSTALL_SCRIPT" ]; then
-	# Source the script in a subshell to avoid variable conflicts
 	LOCAL_VERSION=$( (source "$UNINSTALL_SCRIPT" && echo "$VERSION") )
 fi
-
-# Get remote version
-REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | head -n 2 | grep -m 1 'VERSION:' | cut -d':' -f2) 
-
+REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | head -n 2 | grep -m 1 'VERSION:' | cut -d':' -f2)
 if [ -z "$REMOTE_VERSION" ]; then
 	echo "$WARNING Could not fetch remote uninstall script version. Will download unconditionally."
 	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
 	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
+	run_command sudo chown pi:pi "$UNINSTALL_SCRIPT"
 elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-echo hello
 	echo "$INFO New uninstall script version ($REMOTE_VERSION) found. Updating..."
 	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
 	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
+	run_command sudo chown pi:pi "$UNINSTALL_SCRIPT"
 	echo "$SUCCESS Uninstall script updated to version $REMOTE_VERSION."
 else
 	echo "$SUCCESS Uninstall script is already up to date (v$LOCAL_VERSION)."
 fi
 
-# 3. Create Directories
+# --- Section 3: Directories ---
 echo "$INFO Creating directories..."
 run_command sudo mkdir -p "$TAILSCALE_DIR" "$TAILSCALE_DATA_DIR"
-sudo chown pi:pi "$TAILSCALE_DIR" "$TAILSCALE_DATA_DIR"
+run_command bash -c "sudo chown pi:pi '$TAILSCALE_DIR' '$TAILSCALE_DATA_DIR'" > /dev/null 2>&1
 echo "$SUCCESS Directories created."
 
-# 4. Gather User Input
+# --- Section 4: User Input ---
 if [ "$DUMMY_MODE" = true ]; then
-	# Dummy data for -d flag
 	echo "[DEV MODE] Skipping user input and using dummy data."
 	TS_HOSTNAME="ts-firewalla-test"
 	TS_AUTHKEY="tskey-test-key"
 	TS_EXTRA_ARGS=""
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
-	# Hostname
 	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME
 	TS_HOSTNAME=${TS_HOSTNAME:-ts-firewalla}
 
-	#  Tailscale Auth Key
 	while true; do
 		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY
 		if [[ "$TS_AUTHKEY" == tskey-* ]]; then
@@ -213,63 +276,61 @@ else
 			echo "$ERROR Invalid format. The Auth Key must start with 'tskey-'."
 		fi
 	done
-
-	# Exit Node
-	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
-	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
-		TS_EXTRA_ARGS="--exit-node --exit-node-allow-lan-access"
-		echo "$QUESTION This device will be configured as an exit node."
-	else
-		TS_EXTRA_ARGS=""
-		echo "$INFO This device will not be configured as an exit node."
-	fi
-         #  TS_EXTRA_ARGS="-accept-dns=true ${TS_EXTRA_ARGS}"    
+# no EXTRA ARGS for now. Maybe bring it back later for exit node, etc. 
+# 	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
+# 	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
+		# TS_EXTRA_ARGS="--exit-node --exit-node-allow-lan-access"
+	# 	echo "$QUESTION This device will be configured as an exit node."
+	# else
+# 		TS_EXTRA_ARGS=""
+#		echo "$INFO This device will not be configured as an exit node."
+#	fi
 fi
 
-# 5. Discover and set subnets
+# --- Section 5: Subnet Discovery ---
 echo "$INFO Discovering available subnets..."
 if [ "$DUMMY_MODE" = false ]; then
-    # Read subnets line by line into an array
-    readarray -t AVAILABLE_SUBNETS < <(get_available_subnets)
+	readarray -t AVAILABLE_SUBNETS < <(get_available_subnets)
 
-    if [ "${#AVAILABLE_SUBNETS[@]}" -eq 0 ]; then
-        echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
-        ADVERTISED_ROUTES=""
-    else
-        ADVERTISED_ROUTES=""
-        for subnet in "${AVAILABLE_SUBNETS[@]}"; do
-            # Trim whitespace just in case
-            subnet=$(echo "$subnet" | xargs)
-            tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
+	if [ "${#AVAILABLE_SUBNETS[@]}" -eq 0 ]; then
+		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
+		ADVERTISED_ROUTES=""
+	else
+		ADVERTISED_ROUTES=""
+		SELECTED_INTERFACES=""
+		while IFS= read -r line; do
+			interface=$(echo "$line" | awk '{print $1}')
+			subnet=$(echo "$line" | awk '{print $2}')
+			tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
 
-            # Default to N if non-interactive
-            if [ -t 0 ]; then
-                read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET
-            else
-                ADVERTISE_SUBNET="N"
-            fi
+			if [ -t 0 ]; then
+				read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET
+			else
+				ADVERTISE_SUBNET="N"
+			fi
 
-            if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
-                if [ -z "$ADVERTISED_ROUTES" ]; then
-                    ADVERTISED_ROUTES="$tailscale_subnet"
-                else
-                    ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
-                fi
-                echo "$SUCCESS Subnet $tailscale_subnet will be advertised."
-            else
-                echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
-            fi
-        done
+			if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
+				if [ -z "$ADVERTISED_ROUTES" ]; then
+					ADVERTISED_ROUTES="$tailscale_subnet"
+				else
+					ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
+				fi
+				SELECTED_INTERFACES="$SELECTED_INTERFACES $interface"
+				echo "$SUCCESS Subnet $tailscale_subnet will be advertised."
+			else
+				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
+			fi
+		done <<< "$(printf '%s\n' "${AVAILABLE_SUBNETS[@]}")"
 
-        if [ -z "$ADVERTISED_ROUTES" ]; then
-            echo "$WARNING No subnets selected for advertisement."
-        else
-            echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
-        fi
-    fi
+		if [ -z "$ADVERTISED_ROUTES" ]; then
+			echo "$WARNING No subnets selected for advertisement."
+		else
+			echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
+		fi
+	fi
 fi
 
-# 6. Create docker-compose.yml
+# --- Section 6: docker-compose.yml ---
 echo "$INFO Creating docker-compose.yml file..."
 if [ "$DUMMY_MODE" = true ]; then
 	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
@@ -294,34 +355,37 @@ else
 	echo "$SUCCESS docker-compose.yml created."
 fi
 
+# --- Section 7: Start Script ---
+echo "$INFO Creating and running Tailscale start script..."
+START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}" "${SELECTED_INTERFACES}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}")
 
-# 7. Start the container
-echo "$INFO Pulling the latest Tailscale image..."
-docker_compose_command -f "$DOCKER_COMPOSE_FILE" pull
-echo "$INFO Starting the Tailscale container..."
-docker_compose_command -f "$DOCKER_COMPOSE_FILE" up -d
-
-# 8. Verify Container Status
-if [ "$TEST_MODE" = false ] && [ "$CONFIRM_MODE" = false ] && [ "$DUMMY_MODE" = false ]; then
-	echo "$INFO Verifying container status..."
-	for i in {1..5}; do
-		STATUS=$(sudo docker inspect --format '{{.State.Status}}' tailscale)
-		if [ "$STATUS" == "running" ]; then
-			echo "$SUCCESS Tailscale container is running."
-			break
+if [ "$DUMMY_MODE" = true ] || [ "$TEST_MODE" = true ]; then
+	echo "[DEV/TEST MODE] Would create $START_SCRIPT with the following content:"
+	echo "${START_SCRIPT_CONTENT}"
+	run_command sudo bash "$START_SCRIPT"
+else
+	if [ "$CONFIRM_MODE" = true ]; then
+		echo "The following start script will be created at $START_SCRIPT:"
+		echo "${START_SCRIPT_CONTENT}"
+		read -p "Create this file and run it once? [y/N] " -n 1 -r
+		echo
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			echo "${START_SCRIPT_CONTENT}" | sudo tee "$START_SCRIPT" > /dev/null
+			sudo chmod +x "$START_SCRIPT"
+			echo "$SUCCESS Start script created. Running it now..."
+			sudo bash "$START_SCRIPT"
+		else
+			echo "Skipping start script creation and execution."
 		fi
-		echo "$WARNING Container status is '$STATUS'. Waiting... (Attempt $i/5)"
-		sleep 5
-	done
-
-	if [ "$STATUS" != "running" ]; then
-		echo "$ERROR Tailscale container failed to start. Current status: '$STATUS'."
-		echo "$INFO Please check the container logs for errors:"
-		echo "    sudo docker logs tailscale"
-		echo "$INFO Also, review your docker-compose.yml at $DOCKER_COMPOSE_FILE."
-		exit 1
+	else
+		echo "${START_SCRIPT_CONTENT}" | sudo tee "$START_SCRIPT" > /dev/null
+		sudo chmod +x "$START_SCRIPT"
+		echo "$SUCCESS Start script created. Running it now..."
+		sudo bash "$START_SCRIPT"
 	fi
 fi
+
+
 
 # 9. Final Instructions
 echo ""
@@ -335,6 +399,8 @@ echo "1. Go to your Tailscale Admin Console: https://login.tailscale.com/admin/m
 echo "2. Find the '${TS_HOSTNAME}' device."
 echo "3. Click the '...' menu and select 'Edit route settings...'."
 echo "4. Approve the subnet route(s) for '${ADVERTISED_ROUTES}' to access your local network."
+echo ""
+echo "$INFO For more detailed setup instructions, please visit the project's GitHub page: https://github.com/${GITHUB_REPO}"
 echo ""
 echo "$INFO You can run the uninstaller later with: sudo $UNINSTALL_SCRIPT"
 echo "

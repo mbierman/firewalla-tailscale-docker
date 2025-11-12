@@ -1,0 +1,10 @@
+Date: 2025-11-11
+
+- Refactored `install.sh` to address all `GEMINI` comments.
+- `generate_docker_compose_yml` now uses the `$TAILSCALE_DATA_DIR` variable.
+- `generate_tailscale_start` function is now self-contained and robust:
+    - Includes `docker_compose_command` and `run_command` functions.
+    - Accepts and uses `TEST_MODE`, `CONFIRM_MODE`, and `DUMMY_MODE` variables.
+- Corrected argument passing to `generate_tailscale_start`.
+- Removed duplicated code block in the start script section.
+- Added a link to the GitHub project in the final instructions.

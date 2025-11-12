@@ -29,6 +29,7 @@ Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Pro
 *   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node.
 *   **Clean Uninstallation:** A dedicated script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
+*   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 
 ## ⚠️ Important Note on Subnet Representation
 
