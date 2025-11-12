@@ -31,6 +31,10 @@ Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Pro
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 
+
+## Passthrough vs split 
+GEMINI add a bit here explaining that the script currently assumes a split-tunnel approach but a full tunnel is possible the configuration may be added in future.) Merge text from above if it makes sense. 
+
 ## ⚠️ Important Note on Subnet Representation
 
 When configuring subnet routes, Firewalla typically displays network addresses with a host IP (e.g., `192.168.10.1/24`). However, Tailscale requires the network address to end in `.0` (e.g., `192.168.10.0/24`).
