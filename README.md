@@ -1,8 +1,5 @@
-<p align="center">
-  <img src="../assets/top2.jpg" alt="Firewalla Tailscale Integration Banner">
-</p>
-<h1>
- Firewalla Tailscale Integration via Docker
+<h1 align="center">
+ 🔥 Firewalla Tailscale Integration via Docker
 </h1>
 <p1 align="center">Easily install and manage Tailscale on your Firewalla which gives you access your firewalla networks when you are away. You can also use it like a VPN Server to route all internet traffic through your Firewalal network.</p1>
 
