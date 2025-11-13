@@ -119,7 +119,7 @@ The `install.sh` script supports flags for more controlled execution:
 To use them, append the flag to the end of the installation command:
 ```bash
 # Test Mode Example
-curl -sSL 'https://raw.githubusercontent.com/mbierman/tailscale-firewalla/main/install.sh' | sudo bash -s -- -t
+curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/install.sh' | sudo bash -s -- -t
 ```
 
 ## 🗑️ Uninstallation
