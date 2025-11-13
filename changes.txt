@@ -1,3 +1,7 @@
+Date: 2025-11-12
+
+- Fixed a bug in `install.sh` where the script would not run in interactive mode even when executed directly. The `while read` loop in the subnet discovery section was incorrectly redirecting standard input. Replaced it with a `for` loop to ensure correct interactive behavior.
+
 Date: 2025-11-11
 
 - Refactored `install.sh` to address all `GEMINI` comments.

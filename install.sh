@@ -100,7 +100,7 @@ convert_subnet_to_tailscale_format() {
 
 # Function to get available subnets from bridge interfaces
 get_available_subnets() {
-	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $2, $4}'
+	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $2, $4}' | sort -k 2 -V
 }
 
 # Function to generate docker-compose.yml
@@ -297,7 +297,7 @@ if [ "$DUMMY_MODE" = false ]; then
 	else
 		ADVERTISED_ROUTES=""
 		SELECTED_INTERFACES=""
-		while IFS= read -r line; do
+		for line in "${AVAILABLE_SUBNETS[@]}"; do
 			interface=$(echo "$line" | awk '{print $1}')
 			subnet=$(echo "$line" | awk '{print $2}')
 			tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
@@ -319,7 +319,7 @@ if [ "$DUMMY_MODE" = false ]; then
 			else
 				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
 			fi
-		done <<< "$(printf '%s\n' "${AVAILABLE_SUBNETS[@]}")"
+		done
 
 		if [ -z "$ADVERTISED_ROUTES" ]; then
 			echo "$WARNING No subnets selected for advertisement."
