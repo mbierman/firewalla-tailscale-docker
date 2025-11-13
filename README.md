@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../Draft images/top2.jpg" alt="Firewalla Tailscale Integration Banner">
+  <img src="../assets/top2.jpg" alt="Firewalla Tailscale Integration Banner">
 </p>
 <h1>
  Firewalla Tailscale Integration via Docker
