@@ -22,7 +22,7 @@ check_url_exists() {
 # --- Paths ---
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
-TAILSCALE_DATA_DIR="/data/tailscale"
+INTERFACES_FILE="/data/tailscale_interfaces"
 START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
@@ -130,11 +130,11 @@ generate_tailscale_start () {
     local advertised_routes="$3"
 	local exit_node_flag="$4"
 	local data_dir="$5"
-	local selected_interfaces="$6"
-	local DOCKER_COMPOSE_FILE="$7"
-	local TEST_MODE="$8"
-	local CONFIRM_MODE="$9"
-	local DUMMY_MODE="${10}"
+	local DOCKER_COMPOSE_FILE="$6"
+	local TEST_MODE="$7"
+	local CONFIRM_MODE="$8"
+	local DUMMY_MODE="$9"
+	local INTERFACES_FILE="${10}"
 
 # The script content generated below uses the local variables above
 cat <<-EOF
@@ -176,11 +176,18 @@ docker_compose_command() {
 	fi
 }
 
+# Read selected interfaces from file
+if [ -f "${INTERFACES_FILE}" ]; then
+    selected_interfaces=$(grep -v '^#' "${INTERFACES_FILE}")
+else
+    selected_interfaces=""
+fi
+
 # Start the container (First run)
 docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
 
 # Add NAT rule(s)
-for iface in $selected_interfaces; do
+for iface in \$selected_interfaces; do
 	if ! sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE 2>/dev/null; then
 		echo "Creating iptable NAT rule for \$iface..."
 		run_command sudo iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE
@@ -191,6 +198,13 @@ done
 
 # Re-run docker-compose up -d
 docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
+
+# Loop until the container is running
+echo "Waiting for the container to start..."
+while ! sudo docker ps -q -f name=tailscale | grep -q .; do
+    sleep 5
+done
+echo "Container started."
 
 # Wait a few seconds for tailscaled to initialize
 sleep 3
@@ -327,6 +341,16 @@ if [ "$DUMMY_MODE" = false ]; then
 			echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
 		fi
 	fi
+	
+    # Save selected interfaces to a file for the start script and uninstall script
+    if [ -n "$SELECTED_INTERFACES" ]; then
+        echo "$INFO Saving selected interfaces to $INTERFACES_FILE..."
+        run_command sudo bash -c "echo '# This file contains the network interfaces selected during Tailscale installation.' > '$INTERFACES_FILE'"
+        run_command sudo bash -c "echo '$SELECTED_INTERFACES' >> '$INTERFACES_FILE'"
+        run_command sudo chmod 644 "$INTERFACES_FILE"
+        run_command sudo chown pi:pi "$INTERFACES_FILE"
+        echo "$SUCCESS Selected interfaces saved."
+    fi
 fi
 
 # --- Section 6: docker-compose.yml ---
@@ -356,7 +380,7 @@ fi
 
 # --- Section 7: Start Script ---
 echo "$INFO Creating and running Tailscale start script..."
-START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXIT_NODE_FLAG}" "${TAILSCALE_DATA_DIR}" "${SELECTED_INTERFACES}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}")
+START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXIT_NODE_FLAG}" "${TAILSCALE_DATA_DIR}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}" "${INTERFACES_FILE}")
 
 if [ "$DUMMY_MODE" = true ] || [ "$TEST_MODE" = true ]; then
 	echo "[DEV/TEST MODE] Would create $START_SCRIPT with the following content:"
