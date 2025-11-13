@@ -28,7 +28,7 @@ START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/firewalla-tailscale-docker"
-LATEST_UNINSTALL_SCRIPT_URL="https://gist.githubusercontent.com/mbierman/c5a0bbac7e9c7da4d6e74c329a3a953f/raw/267fee9b0f63314f094894ce4a9864c172a11120/tailscale_uninstall.sh"
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/uninstall.sh"
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
 # --- Command-line flags ---
@@ -279,7 +279,7 @@ if [ "$DUMMY_MODE" = true ]; then
 	TS_EXTRA_ARGS=""
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
-	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME
+	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME < /dev/tty
 	TS_HOSTNAME=${TS_HOSTNAME:-ts-firewalla}
 
 	while true; do
