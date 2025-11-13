@@ -304,15 +304,19 @@ fi
 # --- Section 5: Subnet Discovery ---
 echo "$INFO Discovering available subnets..."
 if [ "$DUMMY_MODE" = false ]; then
-	readarray -t AVAILABLE_SUBNETS < <(get_available_subnets)
+	ADVERTISED_ROUTES=""
+	SELECTED_INTERFACES=""
+	SUBNET_COUNT=0
 
-	if [ "${#AVAILABLE_SUBNETS[@]}" -eq 0 ]; then
+	# Use a temporary file to count subnets first
+	get_available_subnets > /tmp/firewalla_subnets.txt
+	SUBNET_COUNT=$(wc -l < /tmp/firewalla_subnets.txt)
+
+	if [ "$SUBNET_COUNT" -eq 0 ]; then
 		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
-		ADVERTISED_ROUTES=""
 	else
-		ADVERTISED_ROUTES=""
-		SELECTED_INTERFACES=""
-		for line in "${AVAILABLE_SUBNETS[@]}"; do
+		while read -r line; do
+			if [ -z "$line" ]; then continue; fi
 			interface=$(echo "$line" | awk '{print $1}')
 			subnet=$(echo "$line" | awk '{print $2}')
 			tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
@@ -330,7 +334,7 @@ if [ "$DUMMY_MODE" = false ]; then
 			else
 				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
 			fi
-		done
+		done < /tmp/firewalla_subnets.txt
 
 		if [ -z "$ADVERTISED_ROUTES" ]; then
 			echo "$WARNING No subnets selected for advertisement."
@@ -338,6 +342,8 @@ if [ "$DUMMY_MODE" = false ]; then
 			echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
 		fi
 	fi
+	rm /tmp/firewalla_subnets.txt
+fi
 	
     # Save selected interfaces to a file for the start script and uninstall script
     if [ -n "$SELECTED_INTERFACES" ]; then
