@@ -1,57 +1,63 @@
-# 🚀 Firewalla Tailscale Docker Integration via Docker
+# 🚀 Firewalla Tailscale Integration via Docker
 
 ## Purpose 
-🎉 Easily install and manage Tailscale on your Firewalla device using Docker! This project provides a simple bash script to set up Tailscale, allowing your Firewalla to access your firewalla networks when you are away or, use it like a VPN Server to route all internet traffic through your Firewalal network. 
+🎉 Easily install and manage Tailscale on your Firewalla device using Docker! This project provides an easy installer to set up Tailscale, allowing your Firewalla to access your firewalla networks when you are away or, use it like a VPN Server to route all internet traffic through your Firewalal network. 
 
 ## Why Tailscale?
-Firewalla comes with a no-subscription VPN which is amazing. Why do I need tailscale? 
+Firewalla includes a no-subscription VPN including:
 
-Actually, Firealla has:
 *   **[VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server):** allows you to access devices on your Firewalla-network when you are away.
 *   **[VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client):** allows your Firealla to connect to another VPN server so your devices don't have to. Want to run your Apple TV through a VPN? just assign it to the VPN client.
 
-So _why tailscale_? There are a many [possible answers](https://www.reddit.com/r/firewalla/comments/1l64s6w/why_is_firewalla_silent_about_tailscale/) to this.
+Which is amazing. So _why tailscale_? There are a many [possible answers](https://www.reddit.com/r/firewalla/comments/1l64s6w/why_is_firewalla_silent_about_tailscale/) to this.
 
-Tailscale is appealing because it works even if your ISP doesn’t give you a public IP. Many ISPs now place users behind Carrier-Grade NAT (CGNAT), making traditional VPNs like Firewalla’s difficult or impossible to set up. Tailscale handles this automatically, so you can connect to your home network from anywhere, even without a public IP. 
+Tailscale is appealing because it works even if your ISP doesn’t give you a public IP. Many ISPs now place users behind Carrier-Grade NAT (CGNAT), making traditional VPNs like Firewalla’s difficult or impossible to set up. Tailscale handles this automatically, so you can connect to your home network from anywhere, even without a public IP.
 
 It also integrates seamlessly across all your devices. You don’t need to configure separate VPN clients or remember multiple setups—once a device joins your Tailscale network, it can securely connect to any other authorized device.
 
 Finally, you don’t have to keep switching VPN software to connect different devices. Everything uses the same credentials and rules, making device-to-device access consistent and hassle-free.
 
-Bottom line: Tailscale provides a unified, always-on private network that just works—no public IP, no complex VPN setup, and no juggling multiple clients.
+**Bottom line:** Tailscale provides a unified, always-on private network that _just works_—no public IP, no complex VPN setup, and no juggling multiple clients.
 
-Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Problem solved!
+Tailscale has a [free tier](https://tailscale.com/pricing) with some limits. Problem solved! 
 
 ## ✨ Features of this script
 
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
-*   **Automatic Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
+*   **Automated Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
 *   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node.
-*   **Clean Uninstallation:** A dedicated script to remove all traces of the Tailscale Docker setup.
+*   **Clean Uninstallation:** Remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 
 
 ## Passthrough vs split 
-GEMINI add a bit here explaining that the script currently assumes a split-tunnel approach but a full tunnel is possible the configuration may be added in future.) Merge text from above if it makes sense. 
+GEMINI: Add a bit here explaining that the script currently assumes a split-tunnel approach but a full tunnel is possible the configuration may be added in future.) Merge text from above if it makes sense. 
 
-## ⚠️ Important Note on Subnet Representation
+## ⚠️ Important Notes
 
-When configuring subnet routes, Firewalla typically displays network addresses with a host IP (e.g., `192.168.10.1/24`). However, Tailscale requires the network address to end in `.0` (e.g., `192.168.10.0/24`).
+### On Subnet Representation
 
-This installer script automatically handles this conversion for you. When it discovers available subnets and asks if you want to advertise them, it will present them in the Tailscale-compatible `.0` format. You should approve these subnets as presented by the script.
+* When configuring subnet routes, Firewalla typically displays network addresses with a host IP (e.g., `192.168.10.1/24`). However, Tailscale requires the network address to end in `.0` (e.g., `192.168.10.0/24`).
+
+This installer  automatically handles this conversion for you. When it discovers available subnets and asks if you want to advertise them, it will present them in the Tailscale-compatible `.0` format. 
+
+### Other Notes
+* Tailscale has a lot of options. Thos installer doesn't try to account for every possible configuration parameter. if there are requests, I might add in the future, but this will get you started.
+
+* Only tested on Gold in Router mode. Should work on Purple too.
 
 ## 📝 Preparation
 
 ### Required
-*   **A Firewalla device (only tested on Gold series for now).** 
-*   **An active [Tailscale account](https://login.tailscale.com/start).**
-*   **A Tailscale Auth Key.** You can generate one from your Tailscale admin console under **Settings** -> **Auth keys**.
+*  A Firewalla device (only tested on Gold series for now).
+*  A [Tailscale account](https://login.tailscale.com/start).
+*  A Tailscale Auth Key.** You can generate one from your Tailscale admin console under `Settings** > Auth keys`.
+
 ### Recommended
-*   **A dedicated VLAN for Tailscale.** For enhanced security and control, I recommend creating a dedicated VLAN on your Firewalla for Tailscale. This creates a secure "landing zone" for all incoming Tailscale traffic, which you can then control with Firewalla's firewall rules. Using a VLAN also avoids consuming your Firewalla's port assignments in the same way a separate physical network might.
-    *   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
-    *   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
-    *   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
+*   In the Firewalla app, create a new LAN with a specific IP range. We suggest using a subnet with `100` as the third octet (e.g., `192.168.100.0/24`).
+*   It is okay to disable DHCP, mDNS, and SSDP on this new VLAN.
+*   This VLAN will be used to create rules in Firewalla to control Tailscale's access to the rest of your network. For example, you could allow just a device Group to be accessed by Tailscale using Firewalla's UI.
 
     Alternatively, if you prefer not to create a new tailscale VLAN, you can use existing LANs or VLANs. In this case, the script will present your existing subnets and allow you to advertise them. Any networks you choose will be directly accessible from tailscale so do this with caution. 
 
@@ -67,9 +73,9 @@ curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 
 The script is interactive and will guide you through the following steps:
 
-1.  Enter your **Tailscale Auth Key:** You will be prompted to enter your auth key. [[tailscale docs](https://tailscale.com/kb/1085/auth-keys/)]
-2.  Choose **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
-3.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node. An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN. This isn't needed if you just want to access your devices remotely. 
+1. Enter your **Tailscale Auth Key:** You will be prompted to enter your auth key. [[tailscale docs](https://tailscale.com/kb/1085/auth-keys/)]
+1.  Choose **Advertise Subnets:** The script will detect all the local subnets (LAN and VLANs) configured on your Firewalla. If you have created a dedicated VLAN with `.100.` in its third octet (e.g., `192.168.100.0/24`), the script will recommend this as the primary subnet to advertise. If you accept this, you may not need to advertise any other subnets. The script will then ask if you wish to advertise any other detected subnets.
+1.  **Exit Node:** You will be asked if you want to use your Firewalla as an exit node. An exit node allows you to route all of your internet traffic through your Firewalla, no matter where you are. In simple terms, it makes your internet traffic appear to come from your Firewalla's IP address, just like a traditional VPN. This isn't needed if you just want to access your devices remotely. 
 
 Based on your answers, the script will automatically create your `docker-compose.yml` file, pull the container image, and start Tailscale for you. It will persist reboots and firewalla updates but not if you flash your firewalla. 
 
@@ -77,7 +83,7 @@ Based on your answers, the script will automatically create your `docker-compose
 
 The `install.sh` script includes the following flags for more controlled execution:
 
-*   **Test Mode (`-t`):** Run the script in test mode to see which commands would be executed without actually making any changes. This is useful for testing and understanding what the script will do before you run it. This is only a test! 
+*   **Test Mode (`-t`):** Run the script in "dry run" mode to see which commands would be executed without actually making any changes. This is useful for testing and understanding what the script will do before you run it. This is only a test! 
 
     ```bash
     # replace URL
@@ -96,8 +102,8 @@ The `install.sh` script includes the following flags for more controlled executi
 After the installation script completes, you **must** perform the following steps in your Tailscale admin console:
 
 1.  **Authorize Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) and authorize your newly added Firewalla device.
-2.  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
-3.  **Enable Exit Node (if chosen):** If you chose to use your Firewalla as an exit node, you **must** enable it. In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**. Then, enable the `Use as exit node` toggle.
+1..  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
+1.  **Enable Exit Node (if chosen):** If you chose to use your Firewalla as an exit node, you **must** enable it. In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**. Then, enable the `Use as exit node` toggle.
 
 Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices. For more information, see the [Tailscale documentation on exit nodes](https://tailscale.com/kb/1019/subnets#exit-nodes).
 
@@ -106,10 +112,10 @@ Once enabled, you can select your Firewalla as an exit node from the Tailscale c
 1. To create an athorization key, go to [Tailscale's documentation on auth keys](https://tailscale.com/kb/1085/auth-keys/). and find Settings (1), Keys (2) , Generate Auth Key (3) 
 <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 
-2. Give a name for your firewalla (1), choose Reusable so it won't expire each time you start your docker and Gnerarte. 
-<img src="assets/Key%202.jpg" alt="Create Key" width="400"/>
+1. Give a name for your firewalla (1), choose Reusable so it won't expire each time you start your docker and Gnerarte. 
+<img src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 
-3. Run the script
+1. Run the script
 
    GEMENI Move the instructions here. 
 
@@ -150,7 +156,7 @@ The `uninstall.sh` script also supports the `-t` and `-c` flags.
 
 Magic. 
 
-The installer script automates the process described in the [official Tailscale documentation for running in Docker](https://tailscale.com/kb/1282/docker). It detects your local networks and interactively helps you build the correct `--advertise-routes` and `--advertise-exit-node` arguments. It also includes the `--accept-dns=true` argument by default to allow Tailscale to manage DNS for your tailnet.
+The installer script automates the process described in the [official Tailscale documentation for running in Docker](https://tailscale.com/kb/1282/docker). It detects your local networks and interactively helps you build the correct `--advertise-routes` and `--advertise-exit-node` arguments.
 
 ## 📚 References
 
