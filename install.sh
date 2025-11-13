@@ -177,6 +177,19 @@ docker_compose_command() {
 	fi
 }
 
+# Add NAT rule(s)
+for iface in \$selected_interfaces; do
+	if ! sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE 2>/dev/null; then
+		echo "Creating iptable NAT rule for \$iface..."
+		run_command sudo iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE
+	else
+		echo "IP table NAT rule for \$iface already in place."
+	fi
+	
+	sleep 2
+done
+
+
 # Read selected interfaces from file
 if [ -f "${INTERFACES_FILE}" ]; then
     selected_interfaces=\$(grep -v '^#' "${INTERFACES_FILE}")
@@ -187,15 +200,6 @@ fi
 # Start the container (First run)
 docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
 
-# Add NAT rule(s)
-for iface in \$selected_interfaces; do
-	if ! sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE 2>/dev/null; then
-		echo "Creating iptable NAT rule for \$iface..."
-		run_command sudo iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE
-	else
-		echo "IP table NAT rule for \$iface already in place."
-	fi
-done
 
 # Re-run docker-compose up -d
 docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
