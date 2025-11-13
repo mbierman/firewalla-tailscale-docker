@@ -2,15 +2,13 @@
 set -e
 set -o pipefail
 
-#GEMENI where is the dummy data? 
-
 # Emoji for user-facing output
 INFO="ℹ️ "
 QUESTION="❔" 
 SUCCESS="✅ "
 WARNING="⚠️ "
 ERROR="❌ "
-VERSION="1.2.0 " 
+VERSION="1.3.0 " 
 
 # Function to check if a URL exists
 check_url_exists() {
@@ -106,8 +104,6 @@ get_available_subnets() {
 }
 
 # Function to generate docker-compose.yml
-
-
 generate_docker_compose_yml() {
 cat <<-EOF
 version: "3.9"

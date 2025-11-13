@@ -1,5 +1,5 @@
 #!/bin/bash
-# VERSION:1.2.0
+# VERSION:1.3.0
 set -e
 set -o pipefail
 
@@ -8,7 +8,7 @@ INFO="ℹ️"
 SUCCESS="✅"
 WARNING="⚠️"
 ERROR="❌"
-VERSION="1.2.0"
+VERSION="1.3.0"
 
 # --- Command-line flags ---
 TEST_MODE=false
@@ -27,6 +27,7 @@ shift $((OPTIND -1))
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
 TAILSCALE_DATA_DIR="/data/tailscale"
+START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 
@@ -95,7 +96,14 @@ if [ -f "$SYSCTL_CONF_FILE" ]; then
 	echo "$SUCCESS IP forwarding config removed."
 fi
 
-# 5. Remove the uninstall script itself
+# 5. Remove the Tailscale start script
+if [ -f "$START_SCRIPT" ]; then
+	echo "$INFO Removing Tailscale start script..."
+	run_command sudo rm -f "$START_SCRIPT"
+	echo "$SUCCESS Tailscale start script removed."
+fi
+
+# 6. Remove the uninstall script itself
 if [ -f "$UNINSTALL_SCRIPT" ]; then
 	echo "$INFO Removing uninstall script..."
 	run_command sudo rm -f "$UNINSTALL_SCRIPT"
