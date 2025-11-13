@@ -283,7 +283,7 @@ else
 	TS_HOSTNAME=${TS_HOSTNAME:-ts-firewalla}
 
 	while true; do
-		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY
+		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY < /dev/tty
 		if [[ "$TS_AUTHKEY" == tskey-* ]]; then
 			break
 		else
@@ -291,7 +291,7 @@ else
 		fi
 	done
 	
-	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
+	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE < /dev/tty
  	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
 		TS_EXIT_NODE_FLAG="--advertise-exit-node"
  		echo "$QUESTION This device will be configured as an exit node."
@@ -318,7 +318,7 @@ if [ "$DUMMY_MODE" = false ]; then
 			tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
 
 			if [ -t 0 ]; then
-				read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET
+				read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET < /dev/tty
 			else
 				ADVERTISE_SUBNET="N"
 			fi
