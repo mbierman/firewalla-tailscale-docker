@@ -1,0 +1,31 @@
+# Ignore common editor/IDE configuration directories
+/.vscode/
+/.idea/
+*.sublime-workspace
+
+# Ignore temporary/backup files created by common editors
+*~
+*.swp
+*.bak
+
+# --- Operating System Files ---
+# macOS-specific files
+.DS_Store
+
+# Windows-specific files (even if you're on Mac/Linux, other developers might use Windows)
+Thumbs.db
+desktop.ini
+
+# --- Generated/Temporary Files ---
+# Log files
+*.log
+
+# Temporary/output files created by the script (Customize based on your scripts!)
+*.tmp
+*.out
+/cache/
+/output/
+
+# Common configuration files that should NOT be committed
+# (e.g., local passwords, API keys, private tokens)
+.env
