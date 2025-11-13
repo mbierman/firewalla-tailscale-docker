@@ -35,7 +35,7 @@ check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 TEST_MODE=false    # Test, but doesn't do anything
 CONFIRM_MODE=false # Ask before doing 
 DUMMY_MODE=false
-TS_EXIT_NODE_FLAG=""   # Initialize TS_EXIT_NODE_FLAG
+TS_EXIT_NODE_FLAG="true"   # Initialize TS_EXIT_NODE_FLAG
 
 while getopts "tcd" opt; do
 	case ${opt} in
@@ -295,7 +295,7 @@ else
 		fi
 	done
 	
-	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE < /dev/tty
+	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (Y/n): " USE_EXIT_NODE < /dev/tty
  	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
 		TS_EXIT_NODE_FLAG="--advertise-exit-node"
  		echo "$QUESTION This device will be configured as an exit node."
