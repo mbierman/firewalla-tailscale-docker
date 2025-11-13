@@ -317,11 +317,7 @@ if [ "$DUMMY_MODE" = false ]; then
 			subnet=$(echo "$line" | awk '{print $2}')
 			tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
 
-			if [ -t 0 ]; then
-				read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET < /dev/tty
-			else
-				ADVERTISE_SUBNET="N"
-			fi
+			read -p "$QUESTION Do you want to advertise the subnet $tailscale_subnet? (y/N): " ADVERTISE_SUBNET < /dev/tty
 
 			if [[ "$ADVERTISE_SUBNET" =~ ^[Yy]$ ]]; then
 				if [ -z "$ADVERTISED_ROUTES" ]; then
