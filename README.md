@@ -102,7 +102,7 @@ The `install.sh` script includes the following flags for more controlled executi
 After the installation script completes, you **must** perform the following steps in your Tailscale admin console:
 
 1.  **Authorize Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) and authorize your newly added Firewalla device.
-1..  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
+1.  **Enable Subnet Routes:** If you chose to advertise any subnets, you must enable them. Click the `...` menu next to your Firewalla device, select **Edit route settings...**, and enable the routes you want to use.
 1.  **Enable Exit Node (if chosen):** If you chose to use your Firewalla as an exit node, you **must** enable it. In the [Machines page](https://login.tailscale.com/admin/machines), click the `...` menu next to your Firewalla device and select **Edit route settings...**. Then, enable the `Use as exit node` toggle.
 
 Once enabled, you can select your Firewalla as an exit node from the Tailscale client on your other devices. For more information, see the [Tailscale documentation on exit nodes](https://tailscale.com/kb/1019/subnets#exit-nodes).

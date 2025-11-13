@@ -34,7 +34,7 @@ check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 TEST_MODE=false    # Test, but doesn't do anything
 CONFIRM_MODE=false # Ask before doing 
 DUMMY_MODE=false
-TS_EXTRA_ARGS=""   # Initialize TS_EXTRA_ARGS
+TS_EXIT_NODE_FLAG=""   # Initialize TS_EXIT_NODE_FLAG
 
 while getopts "tcd" opt; do
 	case ${opt} in
@@ -128,7 +128,7 @@ generate_tailscale_start () {
 	local hostname="$1"
     local authkey="$2"
     local advertised_routes="$3"
-	local extra_args="$4"
+	local exit_node_flag="$4"
 	local data_dir="$5"
 	local selected_interfaces="$6"
 	local DOCKER_COMPOSE_FILE="$7"
@@ -200,6 +200,7 @@ run_command sudo docker exec tailscale tailscale up \\
 	--authkey="${authkey}" \\
 	--hostname="${hostname}" \\
 	--advertise-routes="${advertised_routes}" \\
+	${exit_node_flag} \\
 	--accept-routes \\
 	--accept-dns \\
 	--reset
@@ -275,15 +276,14 @@ else
 		fi
 	done
 	
-# no EXTRA ARGS for now. Maybe bring it back later for exit node, etc. 
-# 	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
-# 	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
-		# TS_EXTRA_ARGS="--exit-node --exit-node-allow-lan-access"
-	# 	echo "$QUESTION This device will be configured as an exit node."
-	# else
-# 		TS_EXTRA_ARGS=""
-#		echo "$INFO This device will not be configured as an exit node."
-#	fi
+	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (y/N): " USE_EXIT_NODE
+ 	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
+		TS_EXIT_NODE_FLAG="--advertise-exit-node"
+ 		echo "$QUESTION This device will be configured as an exit node."
+ 	else
+		TS_EXIT_NODE_FLAG=""
+		echo "$INFO This device will not be configured as an exit node."
+	fi
 fi
 
 # --- Section 5: Subnet Discovery ---
@@ -356,7 +356,7 @@ fi
 
 # --- Section 7: Start Script ---
 echo "$INFO Creating and running Tailscale start script..."
-START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}" "${SELECTED_INTERFACES}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}")
+START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXIT_NODE_FLAG}" "${TAILSCALE_DATA_DIR}" "${SELECTED_INTERFACES}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}")
 
 if [ "$DUMMY_MODE" = true ] || [ "$TEST_MODE" = true ]; then
 	echo "[DEV/TEST MODE] Would create $START_SCRIPT with the following content:"
@@ -398,6 +398,8 @@ echo "1. Go to your Tailscale Admin Console: https://login.tailscale.com/admin/m
 echo "2. Find the '${TS_HOSTNAME}' device."
 echo "3. Click the '...' menu and select 'Edit route settings...'."
 echo "4. Approve the subnet route(s) for '${ADVERTISED_ROUTES}' to access your local network."
+echo ""
+echo "$INFO If you enabled the exit node, you will also need to authorize it in the Tailscale admin console."
 echo ""
 echo "$INFO For more detailed setup instructions, please visit the project's GitHub page: https://github.com/${GITHUB_REPO}"
 echo ""
