@@ -296,9 +296,9 @@ else
 	done
 	
 	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (Y/n): " USE_EXIT_NODE < /dev/tty
- 	if [[ "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
+ 	if [[ -z "$USE_EXIT_NODE" || "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
 		TS_EXIT_NODE_FLAG="--advertise-exit-node"
- 		echo "$QUESTION This device will be configured as an exit node."
+ 		echo "$INFO This device will be configured as an exit node."
  	else
 		TS_EXIT_NODE_FLAG=""
 		echo "$INFO This device will not be configured as an exit node."
