@@ -354,7 +354,6 @@ fi
         run_command sudo chown pi:pi "$INTERFACES_FILE"
         echo "$SUCCESS Selected interfaces saved."
     fi
-fi
 
 # --- Section 6: docker-compose.yml ---
 echo "$INFO Creating docker-compose.yml file..."
