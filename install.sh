@@ -62,7 +62,7 @@ run_command() {
 	elif [ "$TEST_MODE" = true ]; then
 		echo "[TEST MODE] Would run: $@"
 	elif [ "$CONFIRM_MODE" = true ]; then
-		read -p "Run this command? '$@' [y/N] " -n 1 -r
+		read -p "Run this command? '$@' [y/N] " -n 1 -r < /dev/tty
 		echo
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
 			"$@"
@@ -179,7 +179,7 @@ docker_compose_command() {
 
 # Read selected interfaces from file
 if [ -f "${INTERFACES_FILE}" ]; then
-    selected_interfaces=$(grep -v '^#' "${INTERFACES_FILE}")
+    selected_interfaces=\$(grep -v '^#' "${INTERFACES_FILE}")
 else
     selected_interfaces=""
 fi
@@ -428,4 +428,4 @@ echo ""
 echo "$INFO For more detailed setup instructions, please visit the project's GitHub page: https://github.com/${GITHUB_REPO}"
 echo ""
 echo "$INFO You can run the uninstaller later with: sudo $UNINSTALL_SCRIPT"
-echo "
+echo ""
