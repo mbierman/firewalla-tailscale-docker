@@ -28,6 +28,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **Unified Network:** All your devices (laptops, phones, servers) join networks securely. No need to configure different VPN clients or settings for each one.
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
 *   **Split vs. Full Tunnel:** This script configures your Firewalla as a **subnet router** (split tunnel), giving you access to your local devices. It can also optionally be configured as an **exit node** (full tunnel), routing all your internet traffic through your home network.
+*   **Support for Exit node:** With Exit node enabled, you have a "full-tunnel" VPN with all traffic going through your Firewalla. If you disbale Exit node, only traffic to Firewalla Subnets will go to Firewalla. All other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server
 
 **Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
 
@@ -37,7 +38,7 @@ Tailscale offers a generous [free tier](https://tailscale.com/pricing) for perso
 
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
 *   **Automated Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
-*   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node.
+*   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node. Exit Node is enabled by default. 
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 *   **Clean Uninstallation:** A separate script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
