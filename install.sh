@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 set -e
 set -o pipefail
 
@@ -29,7 +28,7 @@ START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
 GITHUB_REPO="mbierman/firewalla-tailscale-docker"
-LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/uninstall.sh"
+LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/uninstall.sh?t=$(date +%s)"
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
 # --- Command-line flags ---
@@ -304,19 +303,17 @@ fi
 
 # --- Section 5: Subnet Discovery ---
 echo "$INFO Discovering available subnets..."
+ADVERTISED_ROUTES=""
+SELECTED_INTERFACES=""
 if [ "$DUMMY_MODE" = false ]; then
-	ADVERTISED_ROUTES=""
-	SELECTED_INTERFACES=""
-	SUBNET_COUNT=0
+	SUBNET_LIST=$(get_available_subnets)
 
-	# Use a temporary file to count subnets first
-	get_available_subnets > /tmp/firewalla_subnets.txt
-	SUBNET_COUNT=$(wc -l < /tmp/firewalla_subnets.txt)
-
-	if [ "$SUBNET_COUNT" -eq 0 ]; then
+	if [ -z "$SUBNET_LIST" ]; then
 		echo "$WARNING No bridge interfaces with subnets found. Subnet routing will be disabled."
 	else
-		while read -r line; do
+		OLD_IFS="$IFS"
+		IFS=$'\n'
+		for line in $SUBNET_LIST; do
 			if [ -z "$line" ]; then continue; fi
 			interface=$(echo "$line" | awk '{print $1}')
 			subnet=$(echo "$line" | awk '{print $2}')
@@ -335,7 +332,8 @@ if [ "$DUMMY_MODE" = false ]; then
 			else
 				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
 			fi
-		done < /tmp/firewalla_subnets.txt
+		done
+		IFS="$OLD_IFS"
 
 		if [ -z "$ADVERTISED_ROUTES" ]; then
 			echo "$WARNING No subnets selected for advertisement."
@@ -343,8 +341,6 @@ if [ "$DUMMY_MODE" = false ]; then
 			echo "$SUCCESS Will advertise the following subnets: $ADVERTISED_ROUTES"
 		fi
 	fi
-	rm /tmp/firewalla_subnets.txt
-fi
 	
     # Save selected interfaces to a file for the start script and uninstall script
     if [ -n "$SELECTED_INTERFACES" ]; then
@@ -355,6 +351,7 @@ fi
         run_command sudo chown pi:pi "$INTERFACES_FILE"
         echo "$SUCCESS Selected interfaces saved."
     fi
+fi
 
 # --- Section 6: docker-compose.yml ---
 echo "$INFO Creating docker-compose.yml file..."

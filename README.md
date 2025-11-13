@@ -75,7 +75,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
 SSH into your Firewalla and run the following command. The script is interactive and will guide you through the setup.
 
 ```bash
-curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/install.sh' | sudo bash
+curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh?t=$(date +%s)' | sudo bash
 ```
 
 You will be prompted for the following information:
@@ -119,7 +119,7 @@ The `install.sh` script supports flags for more controlled execution:
 To use them, append the flag to the end of the installation command:
 ```bash
 # Test Mode Example
-curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/refs/heads/main/install.sh' | sudo bash -s -- -t
+curl -sSL 'https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh?t=$(date +%s)' | sudo bash -s -- -t
 ```
 
 ## 🗑️ Uninstallation
