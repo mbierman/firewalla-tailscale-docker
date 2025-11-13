@@ -22,11 +22,12 @@ check_url_exists() {
 # --- Paths ---
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
+TAILSCALE_DATA_DIR="/data/tailscale"
 INTERFACES_FILE="/data/tailscale_interfaces"
 START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
-GITHUB_REPO="mbierman/tailscale-firewalla"
+GITHUB_REPO="mbierman/firewalla-tailscale-docker"
 LATEST_UNINSTALL_SCRIPT_URL="https://gist.githubusercontent.com/mbierman/c5a0bbac7e9c7da4d6e74c329a3a953f/raw/267fee9b0f63314f094894ce4a9864c172a11120/tailscale_uninstall.sh"
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
