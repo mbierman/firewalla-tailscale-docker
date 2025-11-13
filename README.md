@@ -150,6 +150,6 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 <p align="center">
   Made with 🔥 and ❤️ for the Firewalla Community!
   <br>
-  <em>Not associated with or officially supported by Firewalla Inc.</em>
+  <em>Not associated with or supported by Firewalla Inc.</em>
 </p>
 
