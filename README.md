@@ -27,8 +27,8 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **No Public IP Required:** Connect to your home network from anywhere, even if your ISP uses CGNAT.
 *   **Unified Network:** All your devices (laptops, phones, servers) join networks securely. No need to configure different VPN clients or settings for each one.
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
-*   **Split vs. Full Tunnel:** This script configures your Firewalla as a **subnet router** (split tunnel), giving you access to your local devices. It can also optionally be configured as an **exit node** (full tunnel), routing all your internet traffic through your home network.
-*   **Support for Exit node:** With Exit node enabled, you have a "full-tunnel" VPN with all traffic going through your Firewalla. If you disbale Exit node, only traffic to Firewalla Subnets will go to Firewalla. All other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server
+*   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. if you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
+
 
 **Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
 
