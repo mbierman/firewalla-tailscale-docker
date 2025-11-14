@@ -137,9 +137,7 @@ fi
 if [ -f "$SYSCTL_CONF_FILE" ]; then
 	echo "$INFO Removing persistent IP forwarding config..."
 	run_command sudo rm -f "$SYSCTL_CONF_FILE"
-	# Reload sysctl to apply the change
-	run_command sudo sysctl --system
-	echo "$SUCCESS IP forwarding config removed."
+	echo "$SUCCESS IP forwarding config removed. A reboot is required to fully disable IP forwarding."
 else
     echo "$INFO Persistent IP forwarding config not found. Skipping removal."
 fi

@@ -39,6 +39,7 @@ Tailscale offers a generous [free tier](https://tailscale.com/pricing) for perso
 *   **Interactive Installation:** A guided setup process that makes configuration easy.
 *   **Automated Subnet Detection:** The script automatically detects your local subnets (LAN and VLANs) and asks which ones you want to make accessible through Tailscale.
 *   **Simple Exit Node Setup:** A simple yes/no prompt to configure your Firewalla as an exit node. Exit Node is enabled by default. 
+*   **Optional IPv6 Support:** Choose whether to enable IPv6 forwarding for your Tailscale node.
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 *   **Clean Uninstallation:** A separate script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
@@ -84,6 +85,7 @@ You will be prompted for the following information:
 2.  **Tailscale Auth Key:** Paste the key you generated in the previous step.
 3.  **Advertise Subnets:** The script will detect your local networks. Choose `y` for any LANs or VLANs you want to access from your other Tailscale devices.
 4.  **Exit Node:** Choose `y` if you want to route all your internet traffic through your Firewalla when you are away from home.
+5.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
 
 The script will then create the necessary files, pull the Docker container, and start Tailscale. There is also a start script that will run if your firewalla reboots.
 

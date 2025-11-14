@@ -230,21 +230,31 @@ EOF
 
 echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
 
+# --- IPv6 Prompt ---
+ENABLE_IPV6="n" # Default to no
+if [ "$DUMMY_MODE" = false ]; then
+    read -p "$QUESTION Do you want to enable IPv6 forwarding for Tailscale? (y/N): " ENABLE_IPV6 < /dev/tty
+fi
+
 # --- Section 1: IP Forwarding ---
-echo "$INFO Enabling persistent IP forwarding..."
-if [ ! -f "$SYSCTL_CONF_FILE" ]; then
-	if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
-		run_command echo "net.ipv4.ip_forward=1"
-		# run_command echo "net.ipv6.conf.all.forwarding=1"
-	else
-		sudo mkdir -p "$(dirname "$SYSCTL_CONF_FILE")"
-		sudo bash -c "echo 'net.ipv4.ip_forward=1' >> '$SYSCTL_CONF_FILE'"
-		sudo bash -c "echo 'net.ipv6.conf.all.forwarding=1' >> '$SYSCTL_CONF_FILE'"
-		sudo sysctl --system
-		echo "$SUCCESS IP forwarding enabled and applied."
+echo "$INFO Configuring persistent IP forwarding..."
+if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
+	run_command echo "Write 'net.ipv4.ip_forward=1' to $SYSCTL_CONF_FILE"
+	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
+		run_command echo "Write 'net.ipv6.conf.all.forwarding=1' to $SYSCTL_CONF_FILE"
 	fi
+	run_command sudo sysctl -p "$SYSCTL_CONF_FILE"
 else
-	echo "$INFO IP forwarding configuration already exists."
+	sudo mkdir -p "$(dirname "$SYSCTL_CONF_FILE")"
+	sudo bash -c "echo 'net.ipv4.ip_forward=1' > '$SYSCTL_CONF_FILE'"
+	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
+		sudo bash -c "echo 'net.ipv6.conf.all.forwarding=1' >> '$SYSCTL_CONF_FILE'"
+		echo "$INFO IPv6 forwarding has been enabled."
+	else
+		echo "$INFO IPv6 forwarding is disabled."
+	fi
+	sudo sysctl -p "$SYSCTL_CONF_FILE"
+	echo "$SUCCESS IP forwarding settings configured."
 fi
 
 # --- Section 2: Uninstall Script ---
