@@ -133,6 +133,13 @@ sudo /data/tailscale-uninstall.sh
 
 ⛔️ This will stop and remove the container, delete all configuration files and directories created by the installer, and remove the uninstaller script itself.
 
+## 📱Exit Node
+If you use the default configured for exit node, you will be able to enable or disable the "full tunnel" on the client meaning you can decide if internet traffic goes over your Firewalla or not when you are connected to Tailscale. 
+
+You can also use at as a VPN without access to your local Firewalla networks! 
+
+<img src="assets/ios1.png" alt="Enable Exit Node" width="200" align="top"/> <img src="assets/ios2.png" alt="Approve your Firewalla" width="200" align="top"/>
+
 ## 💡 How It Works
 
 This project automates the process described in the [official Tailscale documentation for running in Docker](https://tailscale.com/kb/1282/docker). The installer script interactively helps you build the correct `--advertise-routes` and `--advertise-exit-node` arguments and other fun stuff for your setup and creates a persistent startup script so the container survives reboots.
@@ -153,4 +160,3 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
   <br>
   <em>Not associated with or supported by Firewalla Inc.</em>
 </p>
-
