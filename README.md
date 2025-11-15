@@ -60,7 +60,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
 1.  Open your Tailscale admin console and go to **Settings** > **Keys**.
 2.  Click **Generate auth key...**.
 
-    <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
+    <img align="center" src="assets/Key.jpg" alt="Find Keys" width="800"/>
 
 3.  Configure the key:
     * Give it a descriptive name (e.g., "firewalla-key").
@@ -68,7 +68,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
     * It's recommended to set an expiration date for the key for security.
     * Click **Generate key**.
 
-    <img src="assets/Key 2.jpg" alt="Create Key" width="400"/>
+    <img align="center" src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 
 4. **Copy the generated key immediately.** You will not be able to see it again.
 
@@ -95,11 +95,11 @@ After the script finishes, you must authorize the new device and its routes.
 
 1.  **Authorize the Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) in your Tailscale console. Your new Firewalla device should appear. Click the **Approve** button.
 
-    <img src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
+    <img align="center" src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
 
 2.  **Enable Subnet Routes:** Click the `...` menu next to your new device and select **Edit route settings...**. Approve any subnets you chose to advertise during installation.
 
-    <img src="assets/Routes.jpg" alt="Approve routes" width="400"/>
+    <img align="center" src="assets/Routes.jpg" alt="Approve routes" width="400"/>
 
 3.  **Enable Exit Node (Optional):** If you configured the device as an exit node, you must also enable it in the **Edit route settings...** panel.
 
@@ -110,7 +110,7 @@ After the script finishes, you must authorize the new device and its routes.
 	* Enable **Override local DNS**.
 	* Configure **Global nameservers** If you are going to use the Firewalla to access the internet (e..g exit-node or "full tunnel" VPN) you can set DNS (you can use any; NextDNS and ControlD DoH are also supported)
 
-    <img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
+    <img align="center" src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
 
 Your Firewalla is now a fully functional part of your Tailnet!
 
@@ -142,8 +142,8 @@ If you use the default configured for exit node, you will be able to enable or d
 You can also use at as a VPN without access to your local Firewalla networks! 
 
 <p align="center">
-  <img src="assets/ios1.png" alt="Enable Exit Node" width="200"/>
-  <img src="assets/ios2.png" alt="Approve your Firewalla" width="200"/>
+  <img align="center" src="assets/ios1.png" alt="Enable Exit Node" width="200"/>
+  <img align="center" src="assets/ios2.png" alt="Approve your Firewalla" width="200"/>
 </p>
 
 ## 💡 How It Works
