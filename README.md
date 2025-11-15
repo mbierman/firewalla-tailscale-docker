@@ -9,6 +9,7 @@
   <a href="#-installation">Installation</a> •
   <a href="#-uninstallation">Uninstallation</a> •
   <a href="#-how-it-works">How It Works</a> •
+    <a href="#-moreuse-cases">More Use Cases</a> •
   <a href="#-license">License</a>
 </p>
 
@@ -145,6 +146,17 @@ You can also use at as a VPN without access to your local Firewalla networks!
 ## 💡 How It Works
 
 This project automates the process described in the [official Tailscale documentation for running in Docker](https://tailscale.com/kb/1282/docker). The installer script interactively helps you build the correct `--advertise-routes` and `--advertise-exit-node` arguments and other fun stuff for your setup and creates a persistent startup script so the container survives reboots.
+
+## 🤯More Use cases
+Although solving access for CGNAT was my original inspiration, Tailscale has a lot of features. It can do everything WireGuard does, but a lot more. (It is based on WireGuard actually) Here are a few examples:
+
+* Let someone into your network for a short time. Great for temporary employees or a family member.
+* Connect your devices to each other no matter where they are. 
+* Let one network talk to other networks like two neighborhoods sharing a single road. 
+* Let one device connect to multiple networks or devices (home, a vacation home, office A, office B at the same time
+* Give certain devices special permissions while others get treated like the weird cousin no one trusts.
+* Make one device (e.g. your Firewalla)the “way out to the internet” for others, or keep everyone minding their own business.
+* Turn access on or off from your phone like you’re flipping light switches.
 
 ## 📚 References
 
