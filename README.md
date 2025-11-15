@@ -27,7 +27,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
 *   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
 
-<p align="center">
+<p>
 See <a href="#-more-use-cases">More Use Cases</a>
 </p>
 <p>**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.</p
@@ -59,7 +59,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
 
 1.  Open your Tailscale admin console and go to **Settings** > **Keys**.
 2.  Click **Generate auth key**.
-<p align="center">
+<p>
     <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 </p>
 3.  Configure the key:
@@ -67,7 +67,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
     * Make sure **Reusable** is selected.
     * It's recommended to set an expiration date for the key for security.
     * Click **Generate key**.
-<p align="center">
+<p>
     <img  src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 </p>
 4. **Copy the generated key immediately.** You will not be able to see it again.
@@ -95,11 +95,11 @@ After the script finishes, you must authorize the new device and its routes.
 
 1.  **Authorize the Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) in your Tailscale console. Your new Firewalla device should appear. Click the **Approve** button.
 
-    <p align="center">
+    <p>
 		<img src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
 </p>
 2.  **Enable Subnet Routes:** Click the `...` menu next to your new device and select **Edit route settings...**. Approve any subnets you chose to advertise during installation.
- <p align="center">
+ <p>
     <img src="assets/Routes.jpg" alt="Approve routes" width="400"/>
  </p>
 3.  **Enable Exit Node (Optional):** If you configured the device as an exit node, you must also enable it in the **Edit route settings...** panel.
@@ -110,8 +110,8 @@ After the script finishes, you must authorize the new device and its routes.
 	* Enable **Restrict to search domain** and add the subnets you are advertising.
 	* Enable **Override local DNS**.
 	* Configure **Global nameservers** If you are going to use the Firewalla to access the internet (e..g exit-node or "full tunnel" VPN) you can set DNS (you can use any; NextDNS and ControlD DoH are also supported)
- <p align="center">
-	  <p align="center">
+ <p>
+	  <p>
     <img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
  </p>
 Your Firewalla is now a fully functional part of your Tailnet!
@@ -143,7 +143,7 @@ If you use the default configured for exit node, you will be able to enable or d
 
 You can also use at as a VPN without access to your local Firewalla networks! 
 
-<p align="center">
+<p>
   <img align="center" src="assets/ios1.png" alt="Enable Exit Node" width="200"/>
   <img align="center" src="assets/ios2.png" alt="Approve your Firewalla" width="200"/>
 </p>
@@ -174,7 +174,7 @@ Although solving access for CGNAT was my original inspiration, Tailscale has a l
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
-<p align="center">
+<p>
   Made with 🔥 and ❤️ for the Firewalla Community!
   <br>
   <em>Not associated with or supported by Firewalla Inc.</em>
