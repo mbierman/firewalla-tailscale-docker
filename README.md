@@ -57,7 +57,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
 
 ### Step 1: Get Your Tailscale Auth Key
 
-1.  Open your Tailscale admin console and go to **Settings** > **Auth keys**.
+1.  Open your Tailscale admin console and go to **Settings** > **Keys**.
 2.  Click **Generate auth key...**.
 
     <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
