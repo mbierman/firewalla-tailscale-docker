@@ -1,4 +1,4 @@
-<h1 align="center">
+mm<h1 align="center">
  🔥 Firewalla Tailscale Integration via Docker 🐳
 </h1><br>
 <p1 align="center">Easily install and manage Tailscale on your Firewalla which gives you access your Firewalla networks when you are away. You can also use it like a VPN Server to route all internet traffic through your Firewalal network.</p1>
@@ -9,7 +9,7 @@
   <a href="#-installation">Installation</a> •
   <a href="#-uninstallation">Uninstallation</a> •
   <a href="#-how-it-works">How It Works</a> •
-    <a href="#-moreuse-cases">More Use Cases</a> •
+    <a href="#-more-use-cases">More Use Cases</a> •
   <a href="#-license">License</a>
 </p>
 
@@ -147,7 +147,7 @@ You can also use at as a VPN without access to your local Firewalla networks!
 
 This project automates the process described in the [official Tailscale documentation for running in Docker](https://tailscale.com/kb/1282/docker). The installer script interactively helps you build the correct `--advertise-routes` and `--advertise-exit-node` arguments and other fun stuff for your setup and creates a persistent startup script so the container survives reboots.
 
-## 🤯More Use cases
+## 🤯 More Use Cases
 Although solving access for CGNAT was my original inspiration, Tailscale has a lot of features. It can do everything WireGuard does, but a lot more. (It is based on WireGuard actually) Here are a few examples:
 
 * Let someone into your network for a short time. Great for temporary employees or a family member.
