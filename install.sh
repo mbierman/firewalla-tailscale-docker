@@ -155,7 +155,7 @@ get_available_subnets() {
 # Function to generate docker-compose.yml
 generate_docker_compose_yml() {
 cat <<-EOF
-version: "3.9"
+version: "3.3"
 services:
   tailscale:
     container_name: tailscale
@@ -290,21 +290,34 @@ LOCAL_VERSION=""
 if [ -f "$UNINSTALL_SCRIPT" ]; then
 	LOCAL_VERSION=$(grep -m 1 '# VERSION:' "$UNINSTALL_SCRIPT" | cut -d':' -f2 || true)
 fi
-REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | grep -m 1 '# VERSION:' | cut -d':' -f2 || true)
+
+TEMP_UNINSTALL_SCRIPT=""
+# Create a temporary file and ensure it's cleaned up on exit
+trap 'rm -f "$TEMP_UNINSTALL_SCRIPT"' EXIT
+TEMP_UNINSTALL_SCRIPT=$(mktemp)
+
+if ! curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$TEMP_UNINSTALL_SCRIPT"; then
+    echo "$WARNING Could not fetch remote uninstall script. Will proceed without updating."
+    REMOTE_VERSION=""
+else
+    REMOTE_VERSION=$(grep -m 1 '# VERSION:' "$TEMP_UNINSTALL_SCRIPT" | cut -d':' -f2 || true)
+fi
+
 if [ -z "$REMOTE_VERSION" ]; then
-	echo "$WARNING Could not fetch remote uninstall script version. Will download unconditionally."
-	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
-	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
-	run_command sudo chown pi:pi "$UNINSTALL_SCRIPT"
+	echo "$WARNING Could not determine remote uninstall script version. Skipping update check."
 elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
 	echo "$INFO New uninstall script version ($REMOTE_VERSION) found. Updating..."
-	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
+	run_command sudo cp "$TEMP_UNINSTALL_SCRIPT" "$UNINSTALL_SCRIPT"
 	run_command sudo chmod +x "$UNINSTALL_SCRIPT"
 	run_command sudo chown pi:pi "$UNINSTALL_SCRIPT"
 	echo "$SUCCESS Uninstall script updated to version $REMOTE_VERSION."
 else
 	echo "$SUCCESS Uninstall script is already up to date (v$LOCAL_VERSION)."
 fi
+
+# The trap will clean up the temp file
+trap - EXIT
+rm -f "$TEMP_UNINSTALL_SCRIPT"
 
 # --- Section 3: Directories ---
 echo "$INFO Creating directories..."
