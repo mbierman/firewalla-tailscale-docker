@@ -63,14 +63,14 @@ The installation process involves three main stages: **getting a Tailscale auth 
     <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 
 3.  Configure the key:
-    *   Give it a descriptive name (e.g., "firewalla-key").
-    *   Make sure **Reusable** is selected.
-    *   It's recommended to set an expiration date for the key for security.
-    *   Click **Generate key**.
+    * Give it a descriptive name (e.g., "firewalla-key").
+    * Make sure **Reusable** is selected.
+    * It's recommended to set an expiration date for the key for security.
+    * Click **Generate key**.
 
     <img src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 
-4.  **Copy the generated key immediately.** You will not be able to see it again.
+4. **Copy the generated key immediately.** You will not be able to see it again.
 
 ### Step 2: Run the Installer
 
@@ -87,7 +87,7 @@ You will be prompted for the following information:
 4.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
 5.  **Advertise Subnets:** The script will detect your local networks. Choose `y` for any LANs or VLANs you want to access from your other Tailscale devices.
 
-The script will then create the necessary files, pull the Docker container, and start Tailscale. There is also a start script that will run if your firewalla reboots.
+The install script will then create the necessary files, pull the Docker container, and start Tailscale. There is also a start script that will run if your firewalla reboots.
 
 ### Step 3: Configure in Tailscale Admin Console
 
@@ -104,10 +104,11 @@ After the script finishes, you must authorize the new device and its routes.
 3.  **Enable Exit Node (Optional):** If you configured the device as an exit node, you must also enable it in the **Edit route settings...** panel.
 
 4.  **Configure DNS (Recommended):** To resolve local hostnames, go to the [DNS page](https://login.tailscale.com/admin/dns) in your Tailscale console.
-    *   Add a new **Nameserver**.
-    *   Set the IP address to your Firewalla's LAN IP (e.g., `192.168.x.1`).
-    *   Enable **Restrict to search domain** and add the subnets you are advertising.
-    *   Enable **Override local DNS**.
+	* Add a new **Nameserver**.
+	* Set the IP address to your Firewalla's LAN IP (e.g., `192.168.x.1`).
+	* Enable **Restrict to search domain** and add the subnets you are advertising.
+	* Enable **Override local DNS**.
+	* Configure **Global nameservers** If you are going to use the Firewalla to access the internet (e..g exit-node or "full tunnel" VPN) you can set DNS (you can use any; NextDNS and ControlD DoH are also supported)
 
     <img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
 
