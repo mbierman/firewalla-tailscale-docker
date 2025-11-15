@@ -257,13 +257,13 @@ docker_compose_command -f $DOCKER_COMPOSE_FILE up -d
 
 # Loop until the container is running, with a timeout
 echo "Waiting for the container to start..."
-local container_timeout=60
-local container_start_time=$(date +%s)
+container_timeout=60
+container_start_time=\$(date +%s)
 while ! sudo docker ps -q -f name=tailscale | grep -q .; do
-    local current_time=$(date +%s)
-    local elapsed_time=$((current_time - container_start_time))
+    current_time=\$(date +%s)
+    elapsed_time=\$((current_time - container_start_time))
 
-    if [ "$elapsed_time" -ge "$container_timeout" ]; then
+    if [ "\$elapsed_time" -ge "\$container_timeout" ]; then
         echo "ERROR: Timed out waiting for Tailscale container to start."
         echo "Please check the container logs for errors: sudo docker logs tailscale"
         exit 1
