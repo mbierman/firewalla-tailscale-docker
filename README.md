@@ -156,7 +156,7 @@ Although solving access for CGNAT was my original inspiration, Tailscale has a l
 * Let someone into your network for a short time. Great for temporary employees or a family member.
 * Connect your devices to each other no matter where they are. 
 * Let one network talk to other networks like two neighborhoods sharing a single road. 
-* Let one device connect to multiple networks or devices (home, a vacation home, office A, office B at the same time
+* Let one device connect to multiple networks or devices (home, a vacation home, office A, office B at the same time.
 * Give certain devices special permissions while others get treated like the weird cousin no one trusts.
 * Make one device (e.g. your Firewalla)the “way out to the internet” for others, or keep everyone minding their own business.
 * Turn access on or off from your phone like you’re flipping light switches.
