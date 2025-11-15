@@ -407,6 +407,7 @@ else
 		read -p "Create this file and run it once? [y/N] " -n 1 -r
 		echo
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			run_command sudo mkdir -p "$(dirname "$START_SCRIPT")"
 			echo "${START_SCRIPT_CONTENT}" | sudo tee "$START_SCRIPT" > /dev/null
 			sudo chmod +x "$START_SCRIPT"
 			echo "$SUCCESS Start script created. Running it now..."
@@ -415,6 +416,7 @@ else
 			echo "Skipping start script creation and execution."
 		fi
 	else
+		run_command sudo mkdir -p "$(dirname "$START_SCRIPT")"
 		echo "${START_SCRIPT_CONTENT}" | sudo tee "$START_SCRIPT" > /dev/null
 		sudo chmod +x "$START_SCRIPT"
 		echo "$SUCCESS Start script created. Running it now..."
