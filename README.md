@@ -13,7 +13,7 @@
   <a href="#-license">License</a>
 </p>
 
----
+ 
 ## ❓ Why Use This?
 
 Firewalla already provides an excellent, no-subscription [VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server) and [VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client). So, why add Tailscale?
@@ -21,7 +21,7 @@ Firewalla already provides an excellent, no-subscription [VPN Server](https://he
 Tailscale excels where traditional VPNs can be challenging. Many ISPs now place users behind Carrier-Grade NAT (CGNAT), making it difficult or impossible to get a stable public IP address, which is often required for a standard VPN server. Tailscale navigates CGNAT effortlessly, creating a secure, peer-to-peer mesh network that "just works."
 
 
-**Key benefits include:**
+### **Key benefits include:**
 *   **No Public IP Required:** Connect to your home network from anywhere, even if your ISP uses CGNAT.
 *   **Unified Network:** All your devices (laptops, phones, servers) join networks securely. No need to configure different VPN clients or settings for each one.
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
@@ -30,7 +30,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 <p align="center">
 See <a href="#-more-use-cases">More Use Cases</a>
 </p>
-**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
+<p>**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.</p
 
 Tailscale offers a generous [free tier](https://tailscale.com/pricing) for personal use.
 
@@ -58,7 +58,7 @@ The installation process involves three main stages: **getting a Tailscale auth 
 ### Step 1: Get Your Tailscale Auth Key
 
 1.  Open your Tailscale admin console and go to **Settings** > **Keys**.
-2.  Click **Generate auth key...**.
+2.  Click **Generate auth key**.
 <p align="center">
     <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 </p>
