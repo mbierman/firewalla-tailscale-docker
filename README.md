@@ -26,7 +26,8 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **Unified Network:** All your devices (laptops, phones, servers) join networks securely. No need to configure different VPN clients or settings for each one.
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
 *   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
-* see <a href="#-more-use-cases">More Use Cases</a>
+
+See <a href="#-more-use-cases">More Use Cases</a>
 
 
 **Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
