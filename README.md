@@ -140,7 +140,10 @@ If you use the default configured for exit node, you will be able to enable or d
 
 You can also use at as a VPN without access to your local Firewalla networks! 
 
-<img src="assets/ios1.png" alt="Enable Exit Node" width="200" align="top"/> <img src="assets/ios2.png" alt="Approve your Firewalla" width="200" align="top"/>
+<p align="center">
+  <img src="assets/ios1.png" alt="Enable Exit Node" width="200"/>
+  <img src="assets/ios2.png" alt="Approve your Firewalla" width="200"/>
+</p>
 
 ## 💡 How It Works
 
