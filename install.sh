@@ -266,7 +266,7 @@ echo "Container started."
 sleep 3
 
 # Bring Tailscale online with your auth key and configuration
-run_command sudo docker exec tailscale tailscale up \\
+run_command sudo docker exec -d tailscale tailscale up \\
 	--authkey="${authkey}" \\
 	--hostname="${hostname}" \\
 	--advertise-routes="${advertised_routes}" \\
