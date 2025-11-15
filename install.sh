@@ -197,12 +197,15 @@ else
     selected_interfaces=""
 fi
 
-# Start the container (First run)
-docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
+# Wait for Docker socket to be available
+echo "Waiting for Docker daemon..."
+while [ ! -S /var/run/docker.sock ]; do
+    sleep 1
+done
+echo "Docker daemon is ready."
 
-
-# Re-run docker-compose up -d
-docker_compose_command -f $DOCKER_COMPOSE_FILE up -d 
+# Start the container
+docker_compose_command -f $DOCKER_COMPOSE_FILE up -d
 
 # Loop until the container is running
 echo "Waiting for the container to start..."
