@@ -83,7 +83,55 @@ docker_compose_command() {
 	else
 		echo "$ERROR Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."
 		exit 1
-	fi
+		fi
+}
+
+# Function to check for and start Docker if not running
+check_and_start_docker() {
+    echo "$INFO Checking Docker status..."
+
+    # In test or dummy mode, we can't rely on the service status.
+    # We'll just show what would happen and not actually check or wait.
+    if [ "$TEST_MODE" = true ] || [ "$DUMMY_MODE" = true ]; then
+        echo "[DEV/TEST MODE] Assuming Docker is not running to show full logic."
+        run_command sudo systemctl enable docker
+        run_command sudo systemctl start docker
+        echo "[DEV/TEST MODE] Would wait for Docker to become ready."
+        return
+    fi
+
+    # This part runs only in normal or confirm mode
+    if sudo systemctl is-active --quiet docker; then
+        echo "$SUCCESS Docker is already running."
+        return
+    fi
+
+    echo "$WARNING Docker is not running. Attempting to start it..."
+    run_command sudo systemctl enable docker
+    run_command sudo systemctl start docker
+
+    echo "$INFO Waiting for Docker daemon to become ready..."
+    local timeout=30
+    local start_time=$(date +%s)
+
+    while [ ! -S /var/run/docker.sock ]; do
+        local current_time=$(date +%s)
+        local elapsed_time=$((current_time - start_time))
+
+        if [ "$elapsed_time" -ge "$timeout" ]; then
+            echo "$ERROR Timed out waiting for Docker to start. Please check your system for issues."
+            exit 1
+        fi
+        sleep 1
+    done
+
+    if sudo systemctl is-active --quiet docker; then
+        echo "$SUCCESS Docker started successfully."
+    else
+        # This case should be rare if the socket is up, but it's a good final check.
+        echo "$ERROR Docker socket is present, but the service is not active. Please investigate."
+        exit 1
+    fi
 }
 
 # Function to convert subnet from Firewalla format (e.g., 192.168.0.1/24) to Tailscale format (e.g., 192.168.0.0/24)
@@ -232,6 +280,9 @@ EOF
 # --- Script Start ---
 
 echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
+
+# Check and start Docker if not running
+check_and_start_docker
 
 # --- IPv6 Prompt ---
 ENABLE_IPV6="n" # Default to no
