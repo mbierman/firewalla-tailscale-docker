@@ -261,9 +261,9 @@ fi
 echo "$INFO Checking for uninstall script..."
 LOCAL_VERSION=""
 if [ -f "$UNINSTALL_SCRIPT" ]; then
-	LOCAL_VERSION=$( (source "$UNINSTALL_SCRIPT" && echo "$VERSION") )
+	LOCAL_VERSION=$(grep -m 1 '# VERSION:' "$UNINSTALL_SCRIPT" | cut -d':' -f2 || true)
 fi
-REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | head -n 2 | grep -m 1 'VERSION:' | cut -d':' -f2)
+REMOTE_VERSION=$(curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" | grep -m 1 '# VERSION:' | cut -d':' -f2 || true)
 if [ -z "$REMOTE_VERSION" ]; then
 	echo "$WARNING Could not fetch remote uninstall script version. Will download unconditionally."
 	run_command sudo curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$UNINSTALL_SCRIPT"
