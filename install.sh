@@ -201,7 +201,7 @@ run_command() {
 	elif [ "\$TEST_MODE" = true ]; then
 		echo "[TEST MODE] Would run: \$@"
 	elif [ "\$CONFIRM_MODE" = true ]; then
-		read -p "Run this command? '\$@' [y/N] " -n 1 -r
+		read -p "Run this command? '\$@' [y/N] " -n 1 -r < /dev/tty
 		echo
 		if [[ \$REPLY =~ ^[Yy]$ ]]; then
 			"\$@"
@@ -255,9 +255,20 @@ echo "Docker daemon is ready."
 # Start the container
 docker_compose_command -f $DOCKER_COMPOSE_FILE up -d
 
-# Loop until the container is running
+# Loop until the container is running, with a timeout
 echo "Waiting for the container to start..."
+local container_timeout=60
+local container_start_time=$(date +%s)
 while ! sudo docker ps -q -f name=tailscale | grep -q .; do
+    local current_time=$(date +%s)
+    local elapsed_time=$((current_time - container_start_time))
+
+    if [ "$elapsed_time" -ge "$container_timeout" ]; then
+        echo "ERROR: Timed out waiting for Tailscale container to start."
+        echo "Please check the container logs for errors: sudo docker logs tailscale"
+        exit 1
+    fi
+    echo "Container not ready, waiting 5 seconds..."
     sleep 5
 done
 echo "Container started."
