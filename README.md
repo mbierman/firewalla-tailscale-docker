@@ -83,9 +83,9 @@ curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 You will be prompted for the following information:
 1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`).
 2.  **Tailscale Auth Key:** Paste the key you generated in the previous step.
-3.  **Advertise Subnets:** The script will detect your local networks. Choose `y` for any LANs or VLANs you want to access from your other Tailscale devices.
-4.  **Exit Node:** Choose `y` if you want to route all your internet traffic through your Firewalla when you are away from home.
-5.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
+3.  **Exit Node:** Choose `y` if you want to route all your internet traffic through your Firewalla when you are away from home.
+4.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
+5.  **Advertise Subnets:** The script will detect your local networks. Choose `y` for any LANs or VLANs you want to access from your other Tailscale devices.
 
 The script will then create the necessary files, pull the Docker container, and start Tailscale. There is also a start script that will run if your firewalla reboots.
 

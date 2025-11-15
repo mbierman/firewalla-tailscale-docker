@@ -284,39 +284,6 @@ echo "$INFO Starting Tailscale installation for Firewalla (v$VERSION)..."
 # Check and start Docker if not running
 check_and_start_docker
 
-# --- IPv6 Prompt ---
-ENABLE_IPV6="n" # Default to no
-if [ "$DUMMY_MODE" = false ]; then
-    read -p "$QUESTION Do you want to enable IPv6 forwarding for Tailscale? (y/N): " ENABLE_IPV6 < /dev/tty
-fi
-
-# --- Section 1: IP Forwarding ---
-echo "$INFO Configuring persistent IP forwarding..."
-if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
-	run_command echo "Write 'net.ipv4.ip_forward=1' to $SYSCTL_CONF_FILE"
-	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
-		run_command echo "Write 'net.ipv6.conf.all.forwarding=1' to $SYSCTL_CONF_FILE"
-	fi
-	run_command sudo sysctl -p "$SYSCTL_CONF_FILE"
-else
-	# Build the sysctl configuration content
-	SYSCTL_CONTENT="net.ipv4.ip_forward=1"
-	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
-		SYSCTL_CONTENT="${SYSCTL_CONTENT}\nnet.ipv6.conf.all.forwarding=1"
-		echo "$INFO IPv6 forwarding has been enabled."
-	else
-		echo "$INFO IPv6 forwarding is disabled."
-	fi
-
-	# Create the directory and write the configuration file, overwriting any existing file
-	sudo mkdir -p "$(dirname "$SYSCTL_CONF_FILE")"
-	echo -e "$SYSCTL_CONTENT" | sudo tee "$SYSCTL_CONF_FILE" > /dev/null
-
-	# Apply the new settings
-	sudo sysctl -p "$SYSCTL_CONF_FILE"
-	echo "$SUCCESS IP forwarding settings configured."
-fi
-
 # --- Section 2: Uninstall Script ---
 echo "$INFO Checking for uninstall script..."
 LOCAL_VERSION=""
@@ -373,6 +340,39 @@ else
 		TS_EXIT_NODE_FLAG=""
 		echo "$INFO This device will not be configured as an exit node."
 	fi
+fi
+
+# --- IPv6 Prompt ---
+ENABLE_IPV6="n" # Default to no
+if [ "$DUMMY_MODE" = false ]; then
+    read -p "$QUESTION Do you want to enable IPv6 forwarding for Tailscale? (y/N): " ENABLE_IPV6 < /dev/tty
+fi
+
+# --- Section 1: IP Forwarding ---
+echo "$INFO Configuring persistent IP forwarding..."
+if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
+	run_command echo "Write 'net.ipv4.ip_forward=1' to $SYSCTL_CONF_FILE"
+	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
+		run_command echo "Write 'net.ipv6.conf.all.forwarding=1' to $SYSCTL_CONF_FILE"
+	fi
+	run_command sudo sysctl -p "$SYSCTL_CONF_FILE"
+else
+	# Build the sysctl configuration content
+	SYSCTL_CONTENT="net.ipv4.ip_forward=1"
+	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
+		SYSCTL_CONTENT="${SYSCTL_CONTENT}\nnet.ipv6.conf.all.forwarding=1"
+		echo "$INFO IPv6 forwarding has been enabled."
+	else
+		echo "$INFO IPv6 forwarding is disabled."
+	fi
+
+	# Create the directory and write the configuration file, overwriting any existing file
+	sudo mkdir -p "$(dirname "$SYSCTL_CONF_FILE")"
+	echo -e "$SYSCTL_CONTENT" | sudo tee "$SYSCTL_CONF_FILE" > /dev/null
+
+	# Apply the new settings
+	sudo sysctl -p "$SYSCTL_CONF_FILE"
+	echo "$SUCCESS IP forwarding settings configured."
 fi
 
 # --- Section 5: Subnet Discovery ---
