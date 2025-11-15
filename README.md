@@ -27,9 +27,9 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
 *   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
 
+<p align="center">
 See <a href="#-more-use-cases">More Use Cases</a>
-
-
+</p>
 **Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
 
 Tailscale offers a generous [free tier](https://tailscale.com/pricing) for personal use.
@@ -59,17 +59,17 @@ The installation process involves three main stages: **getting a Tailscale auth 
 
 1.  Open your Tailscale admin console and go to **Settings** > **Keys**.
 2.  Click **Generate auth key...**.
-
-    <img align="center" src="assets/Key.jpg" alt="Find Keys" width="800"/>
-
+<p align="center">
+    <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
+</p>
 3.  Configure the key:
     * Give it a descriptive name (e.g., "firewalla-key").
     * Make sure **Reusable** is selected.
     * It's recommended to set an expiration date for the key for security.
     * Click **Generate key**.
-
-    <img align="center" src="assets/Key 2.jpg" alt="Create Key" width="400"/>
-
+<p align="center">
+    <img  src="assets/Key 2.jpg" alt="Create Key" width="400"/>
+</p>
 4. **Copy the generated key immediately.** You will not be able to see it again.
 
 ### Step 2: Run the Installer
