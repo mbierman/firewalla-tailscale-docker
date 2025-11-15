@@ -27,7 +27,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **No Public IP Required:** Connect to your home network from anywhere, even if your ISP uses CGNAT.
 *   **Unified Network:** All your devices (laptops, phones, servers) join networks securely. No need to configure different VPN clients or settings for each one.
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
-*   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. if you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
+*   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
 
 
 **Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
@@ -83,7 +83,7 @@ curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 You will be prompted for the following information:
 1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`).
 2.  **Tailscale Auth Key:** Paste the key you generated in the previous step.
-3.  **Exit Node:** Choose `y` if you want to route all your internet traffic through your Firewalla when you are away from home.
+3.  **Exit Node:** Choose `y` if you want to route all Internet traffic through your Firewalla when you are away from home.
 4.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
 5.  **Advertise Subnets:** The script will detect your local networks. Choose `y` for any LANs or VLANs you want to access from your other Tailscale devices.
 
@@ -111,7 +111,7 @@ After the script finishes, you must authorize the new device and its routes.
 
     <img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
 
-Your Firewalla is now a fully functional part of your tailnet!
+Your Firewalla is now a fully functional part of your Tailnet!
 
 ### Advanced Installation
 
