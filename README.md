@@ -95,12 +95,13 @@ After the script finishes, you must authorize the new device and its routes.
 
 1.  **Authorize the Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) in your Tailscale console. Your new Firewalla device should appear. Click the **Approve** button.
 
-    <img align="center" src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
-
+    <p align="center">
+		<img src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
+</p>
 2.  **Enable Subnet Routes:** Click the `...` menu next to your new device and select **Edit route settings...**. Approve any subnets you chose to advertise during installation.
-
-    <img align="center" src="assets/Routes.jpg" alt="Approve routes" width="400"/>
-
+ <p align="center">
+    <img src="assets/Routes.jpg" alt="Approve routes" width="400"/>
+ </p>
 3.  **Enable Exit Node (Optional):** If you configured the device as an exit node, you must also enable it in the **Edit route settings...** panel.
 
 4.  **Configure DNS (Recommended):** To resolve local hostnames, go to the [DNS page](https://login.tailscale.com/admin/dns) in your Tailscale console.
@@ -109,9 +110,10 @@ After the script finishes, you must authorize the new device and its routes.
 	* Enable **Restrict to search domain** and add the subnets you are advertising.
 	* Enable **Override local DNS**.
 	* Configure **Global nameservers** If you are going to use the Firewalla to access the internet (e..g exit-node or "full tunnel" VPN) you can set DNS (you can use any; NextDNS and ControlD DoH are also supported)
-
-    <img align="center" src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
-
+ <p align="center">
+	  <p align="center">
+    <img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
+ </p>
 Your Firewalla is now a fully functional part of your Tailnet!
 
 ### Advanced Installation
