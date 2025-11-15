@@ -2,7 +2,7 @@
  🔥 Firewalla Tailscale Integration via Docker 🐳
 </h1><br><br>
 <p1 align="center">Easily install and manage Tailscale on your Firewalla which gives you access your Firewalla networks when you are away. You can also use it like a VPN Server to route all internet traffic through your Firewalal network.</p1>
-<br><p align="center">
+<br><br><p align="center">
   <a href="#-why-use-this">Why?</a> •
   <a href="#-features">Features</a> •
   <a href="#-preparation">Preparation</a> •
