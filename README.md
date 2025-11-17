@@ -32,7 +32,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 <p>
 See <a href="#-more-use-cases">More Use Cases</a>
 </p>
-<p>**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.</p>
+**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
 
 Tailscale offers a generous [free tier](https://tailscale.com/pricing) for personal use.
 
