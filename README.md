@@ -1,19 +1,23 @@
 <h1 align="center">
  🔥 Firewalla Tailscale Integration via Docker 🐳
 </h1><br>
-<p1 align="center">Easily install and manage Tailscale on your Firewalla which gives you access your Firewalla networks when you are away. You can also use it like a VPN Server to route all internet traffic through your Firewalal network.</p1>
+<p1 align="center">Easily install and manage Tailscale on your Firewalla which gives you access your Firewalla networks when you are away. You can also use it like a VPN Server to route all internet traffic through your Firewalla network.</p1>
 
-<br><br><p align="center">
-<a href="#-why-use-this">Why?</a> •
-<a href="#-features">Features</a> •
-<a href="#-preparation">Preparation</a> •
-<a href="#-installation">Installation</a> •
-<a href="#-uninstallation">Uninstallation</a> •
-<a href="#-how-it-works">How It Works</a> •
-<a href="#-more-use-cases">More Use Cases</a> •
-<a href="#-Re-authentication">Re-authentication</a> •
-<a href="#-license">License</a>
-</p>
+<br>
+
+## Table of Contents
+* [Why Use This?](#-why-use-this)
+* [Features](#-features)
+* [Preparation](#-preparation)
+* [Installation](#-installation)
+* [Re-authentication](#--re-authentication)
+* [Advanced Installation](#advanced-installation)
+* [Exit Node](#-exit-node)
+* [How It Works](#-how-it-works)
+* [More Use Cases](#-more-use-cases)
+* [Uninstallation](#-uninstallation)
+* [References](#-references)
+* [License](#-license)
 
  
 ## ❓ Why Use This?
@@ -27,7 +31,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **No Public IP Required:** Connect to your home network from anywhere, even if your ISP uses CGNAT.
 *   **Unified Network:** All your devices (laptops, phones, servers) join networks securely. No need to configure different VPN clients or settings for each one.
 *   **Simplified Access:** Once a device is on your Tailscale network (your "tailnet"), it can securely connect to any other authorized device with consistent and simple access rules.
-*   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disbale Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the firewalla you can still chose on the fly in the [Tailscale app](https://github.com/mbierman/firewalla-tailscale-docker/blob/main/README.md#exit-node).
+*   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disable Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the Firewalla you can still chose on the fly in the [Tailscale app](#-exit-node).
 
 <p>
 See <a href="#-more-use-cases">More Use Cases</a>
@@ -45,7 +49,7 @@ Tailscale offers a generous [free tier](https://tailscale.com/pricing) for perso
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 *   **Clean Uninstallation:** A separate script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
-*   **AuthToken update:** You can update an expired token.  
+*   **Auth token update:** You can update an expired token.  
 
 
 ## 📝 Preparation
@@ -91,7 +95,7 @@ You will be prompted for the following information:
 4.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
 5.  **Advertise Subnets:** The script will detect your local networks. Choose `y` for any LANs or VLANs you want to access from your other Tailscale devices.
 
-The install script will then create the necessary files, pull the Docker container, and start Tailscale. There is also a start script that will run if your firewalla reboots.
+The install script will then create the necessary files, pull the Docker container, and start Tailscale. There is also a start script that will run if your Firewalla reboots.
 
 ### Step 3: Configure in Tailscale Admin Console
 
@@ -118,7 +122,7 @@ After the script finishes, you must authorize the new device and its routes.
  </p>
 5, You can either
    * **Disable Expiry** The Tailscale key will not expire. 
-   * **Renew** the tailscale key when it expires see <a href="#-Re-authentication">Re-authentication</a>. 
+   * **Renew** the tailscale key when it expires see <a href="#--re-authentication">Re-authentication</a>. 
 
 Your Firewalla is now a fully functional part of your Tailnet!
 
@@ -143,7 +147,7 @@ Note, for security, the TS key is not saved in the docker-compose.yml or the sta
 
 The `install.sh` script supports flags for more controlled execution:
 *   **Test Mode (`-t`):** A "dry run" that shows what the script will do without making changes.
-*   **Confirm Mode (`-c`):** Prompts for approval before executing each command.
+*   **Confirm Mode (`-c`):** Prompts for approval before executing each.
 
 To use them, append the flag to the end of the installation command:
 ```bash
