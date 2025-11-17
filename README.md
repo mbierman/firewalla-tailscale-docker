@@ -6,18 +6,18 @@
 <br>
 
 ## Table of Contents
-* [Why Use This?](#-why-use-this)
-* [Features](#-features)
-* [Preparation](#-preparation)
-* [Installation](#-installation)
-* [Re-authentication](#--re-authentication)
+* [Why Use This?](#why-use-this)
+* [Features](#features)
+* [Preparation](#preparation)
+* [Installation](#installation)
+* [Re-authentication](#re-authentication)
 * [Advanced Installation](#advanced-installation)
-* [Exit Node](#-exit-node)
-* [How It Works](#-how-it-works)
-* [More Use Cases](#-more-use-cases)
-* [Uninstallation](#-uninstallation)
-* [References](#-references)
-* [License](#-license)
+* [Exit Node](#exit-node)
+* [How It Works](#how-it-works)
+* [More Use Cases](#more-use-cases)
+* [Uninstallation](#uninstallation)
+* [References](#references)
+* [License](#license)
 
  
 ## ❓ Why Use This?
@@ -34,7 +34,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 *   **Support for Exit node:** With Exit node enabled, you have the option of a "full-tunnel" a VPN with all traffic going through your Firewalla or a split tunnel where only traffic to your Firewalla networks goes through Tailscale. If you disable Exit node, all other traffic goes to your internet connection. This is the same as Firewalla's default VPN Server. If you enable Exit node On the Firewalla you can still chose on the fly in the [Tailscale app](#-exit-node).
 
 <p>
-See <a href="#-more-use-cases">More Use Cases</a>
+See <a href="#more-use-cases">More Use Cases</a>
 </p>
 **Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.
 
@@ -122,7 +122,7 @@ After the script finishes, you must authorize the new device and its routes.
  </p>
 5, You can either
    * **Disable Expiry** The Tailscale key will not expire. 
-   * **Renew** the tailscale key when it expires see <a href="#--re-authentication">Re-authentication</a>. 
+   * **Renew** the tailscale key when it expires see <a href="#re-authentication">Re-authentication</a>. 
 
 Your Firewalla is now a fully functional part of your Tailnet!
 
