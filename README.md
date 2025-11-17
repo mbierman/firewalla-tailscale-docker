@@ -10,6 +10,7 @@
   <a href="#-uninstallation">Uninstallation</a> •
   <a href="#-how-it-works">How It Works</a> •
   <a href="#-more-use-cases">More Use Cases</a> •
+   <a href="#-Re-authentication">Re-authentication</a> •
   <a href="#-license">License</a>
 </p>
 
@@ -30,7 +31,7 @@ Tailscale excels where traditional VPNs can be challenging. Many ISPs now place 
 <p>
 See <a href="#-more-use-cases">More Use Cases</a>
 </p>
-<p>**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.</p
+<p>**Bottom line:** Tailscale provides a unified, always-on private network that simplifies remote access, especially for users without a stable public IP. This installer makes it easy to get it running on your Firewalla.</p>
 
 Tailscale offers a generous [free tier](https://tailscale.com/pricing) for personal use.
 
@@ -43,6 +44,8 @@ Tailscale offers a generous [free tier](https://tailscale.com/pricing) for perso
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 *   **Clean Uninstallation:** A separate script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
+*   **AuthToken update:** You can update an expired token.  
+
 
 ## 📝 Preparation
 
@@ -63,10 +66,10 @@ The installation process involves three main stages: **getting a Tailscale auth 
     <img src="assets/Key.jpg" alt="Find Keys" width="800"/>
 </p>
 3.  Configure the key:
-    * Give it a descriptive name (e.g., "firewalla-key").
-    * Make sure **Reusable** is selected.
-    * It's recommended to set an expiration date for the key for security.
-    * Click **Generate key**.
+- Give it a descriptive name (*e.g., "firewalla-key") *Optional but recommended for future management.*
+- Make sure **Reusable** *is selected.*
+ **🚫 IMPORTANT:** Do not choose an ephemeral key.  an ephemeral key, will cause the Firewalla node to be removed from your network after it goes offline or reboots.*
+4. Click **Generate key**.
 <p>
     <img  src="assets/Key 2.jpg" alt="Create Key" width="400"/>
 </p>
@@ -95,13 +98,11 @@ After the script finishes, you must authorize the new device and its routes.
 
 1.  **Authorize the Device:** Go to the [Machines page](https://login.tailscale.com/admin/machines) in your Tailscale console. Your new Firewalla device should appear. Click the **Approve** button.
 
-    <p>
-		<img src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/>
-</p>
+<p><img src="assets/Approve.jpg" alt="Approve your Firewalla" width="800"/></p>
+
 2.  **Enable Subnet Routes:** Click the `...` menu next to your new device and select **Edit route settings...**. Approve any subnets you chose to advertise during installation.
- <p>
-    <img src="assets/Routes.jpg" alt="Approve routes" width="400"/>
- </p>
+<p><img src="assets/Routes.jpg" alt="Approve routes" width="400"/></p>
+
 3.  **Enable Exit Node (Optional):** If you configured the device as an exit node, you must also enable it in the **Edit route settings...** panel.
 
 4.  **Configure DNS (Recommended):** To resolve local hostnames, go to the [DNS page](https://login.tailscale.com/admin/dns) in your Tailscale console.
@@ -114,7 +115,28 @@ After the script finishes, you must authorize the new device and its routes.
 	  <p>
     <img src="assets/DNS.jpg" alt="Configure DNS" width="800"/>
  </p>
+5, You can either
+   * **Disable Expiry** The Tailscale key will not expire. 
+   * **Renew** the tailscale key when it expires see <a href="#-Re-authentication">Re-authentication</a>. 
+
 Your Firewalla is now a fully functional part of your Tailnet!
+
+
+## 🔄 Re-authentication
+
+In some cases, you may need to re-authenticate your Firewalla node with Tailscale. This can happen if you manually revoke the node from the Tailscale admin console or if the Auth key expires.
+
+To re-authenticate without running the full setup again, you can use the `-R` flag. This will preserve your existing hostname, subnet, and exit node settings, and only prompt you for a new auth key.
+
+1.  Generate a new **non-expiring, reusable** auth key from the Tailscale admin console.
+2.  SSH into your Firewalla and run the following command:
+
+```bash
+curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh?t=$(date +%s)" | sudo bash -s -- -R
+```
+You will enter the tailsale key and the container will be updated. 
+
+Note, for security, the TS key is not saved in the docker-compose.yml or the startup script. 
 
 ### Advanced Installation
 
@@ -128,15 +150,8 @@ To use them, append the flag to the end of the installation command:
 curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh?t=$(date +%s)" | sudo bash -s -- -t
 ```
 
-## 🗑️ Uninstallation
 
-To completely remove this Tailscale setup from your Firewalla, SSH in and run the following command:
-
-```bash
-sudo /data/tailscale-uninstall.sh
-```
-
-⛔️ This will stop and remove the container, delete all configuration files and directories created by the installer, and remove the uninstaller script itself.
+The script will then ask for your new key and re-authenticate the node.
 
 ## 📱Exit Node
 If you use the default configured for exit node, you will be able to enable or disable the "full tunnel" on the client meaning you can decide if internet traffic goes over your Firewalla or not when you are connected to Tailscale. 
@@ -162,6 +177,16 @@ Although solving access for CGNAT was my original inspiration, Tailscale has a l
 * Give certain devices special permissions while others get treated like the weird cousin no one trusts.
 * Make one device (e.g. your Firewalla)the “way out to the internet” for others, or keep everyone minding their own business.
 * Turn access on or off from your phone like you’re flipping light switches.
+
+## 🗑️ Uninstallation
+
+To completely remove this Tailscale setup from your Firewalla, SSH in and run the following command:
+
+```bash
+sudo /data/tailscale-uninstall.sh
+```
+
+⛔️ This will stop and remove the container, delete all configuration files and directories created by the installer, and remove the uninstaller script itself.
 
 ## 📚 References
 

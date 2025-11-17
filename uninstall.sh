@@ -1,5 +1,5 @@
 #!/bin/bash
-# VERSION:1.3.0
+# VERSION:1.3.1
 set -e
 set -o pipefail
 
@@ -27,7 +27,7 @@ shift $((OPTIND -1))
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
 TAILSCALE_DATA_DIR="/data/tailscale"
-INTERFACES_FILE="/data/tailscale_interfaces"
+CONFIG_FILE="/data/tailscale.conf"
 START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
@@ -78,32 +78,32 @@ fi
 echo "$INFO Removing Tailscale Docker image..."
 IMAGE_ID=$(sudo docker images -q tailscale/tailscale:latest)
 if [ -n "$IMAGE_ID" ]; then
-    run_command sudo docker image rm "$IMAGE_ID"
+	run_command sudo docker image rm "$IMAGE_ID"
 else
-    echo "$WARNING Tailscale Docker image not found. Skipping image removal."
+	echo "$WARNING Tailscale Docker image not found. Skipping image removal."
 fi
 
 # 3. Remove iptables rules
 echo "$INFO Checking for selected interfaces to remove iptables rules..."
-SELECTED_INTERFACES=""
-if [ -f "$INTERFACES_FILE" ]; then
-    SELECTED_INTERFACES=$(grep -v '^#' "$INTERFACES_FILE")
-    echo "$SUCCESS Found interfaces: $SELECTED_INTERFACES"
+TS_INTERFACES=""
+if [ -f "$CONFIG_FILE" ]; then
+	source "$CONFIG_FILE" # Load TS_INTERFACES from the config file
+	echo "$SUCCESS Found interfaces: $TS_INTERFACES"
 else
-    echo "$INFO No interfaces file found at $INTERFACES_FILE. Skipping iptables rule removal."
+	echo "$INFO No configuration file found at $CONFIG_FILE. Skipping iptables rule removal."
 fi
 
-if [ -n "$SELECTED_INTERFACES" ]; then
-    echo "$INFO Removing iptables NAT rules..."
-    for iface in $SELECTED_INTERFACES; do
-        if sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "$iface" -j MASQUERADE 2>/dev/null; then
-            echo "Removing iptable NAT rule for $iface..."
-            run_command sudo iptables -t nat -D POSTROUTING -s 100.64.0.0/10 -o "$iface" -j MASQUERADE
-        else
-            echo "IP table NAT rule for $iface not found."
-        fi
-    done
-    echo "$SUCCESS iptables rules removed."
+if [ -n "$TS_INTERFACES" ]; then
+	echo "$INFO Removing iptables NAT rules..."
+	for iface in $TS_INTERFACES; do
+		if sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "$iface" -j MASQUERADE 2>/dev/null; then
+			echo "Removing iptable NAT rule for $iface..."
+			run_command sudo iptables -t nat -D POSTROUTING -s 100.64.0.0/10 -o "$iface" -j MASQUERADE
+		else
+			echo "IP table NAT rule for $iface not found."
+		fi
+	done
+	echo "$SUCCESS iptables rules removed."
 fi
 
 # 4. Remove configuration directory
@@ -112,7 +112,7 @@ if [ -d "$TAILSCALE_DIR" ]; then
 	run_command sudo rm -rf "$TAILSCALE_DIR"
 	echo "$SUCCESS Tailscale configuration directory removed."
 else
-    echo "$INFO Tailscale configuration directory not found. Skipping removal."
+	echo "$INFO Tailscale configuration directory not found. Skipping removal."
 fi
 
 # 5. Remove Tailscale data directory
@@ -121,16 +121,16 @@ if [ -d "$TAILSCALE_DATA_DIR" ]; then
 	run_command sudo rm -rf "$TAILSCALE_DATA_DIR"
 	echo "$SUCCESS Tailscale data directory removed."
 else
-    echo "$INFO Tailscale data directory not found. Skipping removal."
+	echo "$INFO Tailscale data directory not found. Skipping removal."
 fi
 
-# 6. Remove interfaces file
-if [ -f "$INTERFACES_FILE" ]; then
-	echo "$INFO Removing interfaces file..."
-	run_command sudo rm -f "$INTERFACES_FILE"
-	echo "$SUCCESS Interfaces file removed."
+# 6. Remove configuration file
+if [ -f "$CONFIG_FILE" ]; then
+	echo "$INFO Removing configuration file..."
+	run_command sudo rm -f "$CONFIG_FILE"
+	echo "$SUCCESS Configuration file removed."
 else
-    echo "$INFO Interfaces file not found. Skipping removal."
+	echo "$INFO Configuration file not found. Skipping removal."
 fi
 
 # 7. Remove persistent IP forwarding
@@ -139,7 +139,7 @@ if [ -f "$SYSCTL_CONF_FILE" ]; then
 	run_command sudo rm -f "$SYSCTL_CONF_FILE"
 	echo "$SUCCESS IP forwarding config removed. A reboot is required to fully disable IP forwarding."
 else
-    echo "$INFO Persistent IP forwarding config not found. Skipping removal."
+	echo "$INFO Persistent IP forwarding config not found. Skipping removal."
 fi
 
 # 8. Remove the Tailscale start script
@@ -148,7 +148,7 @@ if [ -f "$START_SCRIPT" ]; then
 	run_command sudo rm -f "$START_SCRIPT"
 	echo "$SUCCESS Tailscale start script removed."
 else
-    echo "$INFO Tailscale start script not found. Skipping removal."
+	echo "$INFO Tailscale start script not found. Skipping removal."
 fi
 
 # 9. Remove the uninstall script itself
@@ -157,7 +157,7 @@ if [ -f "$UNINSTALL_SCRIPT" ]; then
 	run_command sudo rm -f "$UNINSTALL_SCRIPT"
 	echo "$SUCCESS Uninstall script removed."
 else
-    echo "$INFO Uninstall script not found. Skipping removal."
+	echo "$INFO Uninstall script not found. Skipping removal."
 fi
 
 echo ""

@@ -4,26 +4,26 @@ set -o pipefail
 
 # Emoji for user-facing output
 INFO="ℹ️ "
-QUESTION="❔" 
+QUESTION="❔"
 SUCCESS="✅ "
 WARNING="⚠️ "
 ERROR="❌ "
-VERSION="1.3.0 " 
+VERSION="1.3.0 "
 
 # Function to check if a URL exists
 check_url_exists() {
-    local url="$1"
-    if ! curl -s --head --fail "$url" > /dev/null; then
-        echo "$ERROR The URL '$url' for the uninstall script was not found or is inaccessible. Please check the URL and your network connection."
-        exit 1
-    fi
+	local url="$1"
+	if ! curl -s --head --fail "$url" > /dev/null; then
+		echo "$ERROR The URL '$url' for the uninstall script was not found or is inaccessible. Please check the URL and your network connection."
+		exit 1
+	fi
 }
 
 # --- Paths ---
 TAILSCALE_DIR="/home/pi/.firewalla/run/docker/tailscale"
 DOCKER_COMPOSE_FILE="$TAILSCALE_DIR/docker-compose.yml"
 TAILSCALE_DATA_DIR="/data/tailscale"
-INTERFACES_FILE="/data/tailscale_interfaces"
+CONFIG_FILE="/data/tailscale.conf"
 START_SCRIPT="/home/pi/.firewalla/config/post_main.d/tailscale-start.sh"
 SYSCTL_CONF_FILE="/etc/sysctl.d/99-tailscale.conf"
 UNINSTALL_SCRIPT="/data/tailscale-uninstall.sh"
@@ -31,29 +31,7 @@ GITHUB_REPO="mbierman/firewalla-tailscale-docker"
 LATEST_UNINSTALL_SCRIPT_URL="https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/uninstall.sh?t=$(date +%s)"
 check_url_exists "$LATEST_UNINSTALL_SCRIPT_URL"
 
-# --- Command-line flags ---
-TEST_MODE=false    # Test, but doesn't do anything
-CONFIRM_MODE=false # Ask before doing 
-DUMMY_MODE=false
-TS_EXIT_NODE_FLAG="true"   # Initialize TS_EXIT_NODE_FLAG
-
-while getopts "tcd" opt; do
-	case ${opt} in
-		t) TEST_MODE=true ;;
-		c) CONFIRM_MODE=true ;;
-		d) DUMMY_MODE=true ;;
-		*) echo "Invalid option: -${OPTARG}" >&2; exit 1 ;;
-	esac
-done
-shift $((OPTIND -1))
-
 # --- Functions ---
-
-# Check for mutually exclusive flags
-if [ "$TEST_MODE" = true ] && [ "$DUMMY_MODE" = true ]; then
-	echo "$ERROR The -t (test) and -d (dummy) flags are mutually exclusive. Please use one or the other."
-	exit 1
-fi
 
 # Function to execute or display commands
 run_command() {
@@ -83,55 +61,55 @@ docker_compose_command() {
 	else
 		echo "$ERROR Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."
 		exit 1
-		fi
+	fi
 }
 
 # Function to check for and start Docker if not running
 check_and_start_docker() {
-    echo "$INFO Checking Docker status..."
+	echo "$INFO Checking Docker status..."
 
-    # In test or dummy mode, we can't rely on the service status.
-    # We'll just show what would happen and not actually check or wait.
-    if [ "$TEST_MODE" = true ] || [ "$DUMMY_MODE" = true ]; then
-        echo "[DEV/TEST MODE] Assuming Docker is not running to show full logic."
-        run_command sudo systemctl enable docker
-        run_command sudo systemctl start docker
-        echo "[DEV/TEST MODE] Would wait for Docker to become ready."
-        return
-    fi
+	# In test or dummy mode, we can't rely on the service status.
+	# We'll just show what would happen and not actually check or wait.
+	if [ "$TEST_MODE" = true ] || [ "$DUMMY_MODE" = true ]; then
+		echo "[DEV/TEST MODE] Assuming Docker is not running to show full logic."
+		run_command sudo systemctl enable docker
+		run_command sudo systemctl start docker
+		echo "[DEV/TEST MODE] Would wait for Docker to become ready."
+		return
+	fi
 
-    # This part runs only in normal or confirm mode
-    if sudo systemctl is-active --quiet docker; then
-        echo "$SUCCESS Docker is already running."
-        return
-    fi
+	# This part runs only in normal or confirm mode
+	if sudo systemctl is-active --quiet docker; then
+		echo "$SUCCESS Docker is already running."
+		return
+	fi
 
-    echo "$WARNING Docker is not running. Attempting to start it..."
-    run_command sudo systemctl enable docker
-    run_command sudo systemctl start docker
+	echo "$WARNING Docker is not running. Attempting to start it..."
+	run_command sudo systemctl enable docker
+	run_command sudo systemctl start docker
 
-    echo "$INFO Waiting for Docker daemon to become ready..."
-    local timeout=30
-    local start_time=$(date +%s)
+	echo "$INFO Waiting for Docker daemon to become ready..."
+	local timeout=30
+	local start_time=$(date +%s)
 
-    while [ ! -S /var/run/docker.sock ]; do
-        local current_time=$(date +%s)
-        local elapsed_time=$((current_time - start_time))
+	while [ ! -S /var/run/docker.sock ]; do
+		local current_time=$(date +%s)
+		local elapsed_time=$((current_time - start_time))
 
-        if [ "$elapsed_time" -ge "$timeout" ]; then
-            echo "$ERROR Timed out waiting for Docker to start. Please check your system for issues."
-            exit 1
-        fi
-        sleep 1
-    done
+		if [ "$elapsed_time" -ge "$timeout" ]; then
+			echo "$ERROR Timed out waiting for Docker to start. Please check your system for issues."
+			exit 1
+		fi
+		sleep 1
+	done
 
-    if sudo systemctl is-active --quiet docker; then
-        echo "$SUCCESS Docker started successfully."
-    else
-        # This case should be rare if the socket is up, but it's a good final check.
-        echo "$ERROR Docker socket is present, but the service is not active. Please investigate."
-        exit 1
-    fi
+	if sudo systemctl is-active --quiet docker; then
+		echo "$SUCCESS Docker started successfully."
+	else
+		# This case should be rare if the socket is up, but it's a good final check.
+		echo "$ERROR Docker socket is present, but the service is not active. Please investigate."
+		exit 1
+	fi
 }
 
 # Function to convert subnet from Firewalla format (e.g., 192.168.0.1/24) to Tailscale format (e.g., 192.168.0.0/24)
@@ -168,27 +146,39 @@ services:
       - /dev/net/tun:/dev/net/tun
     command: tailscaled --tun=userspace-networking
 EOF
-
 }
 
 # Function to generate tailscale-start.sh content
 generate_tailscale_start () {
 # Ensure variables are local and correctly set from function arguments
 	local hostname="$1"
-    local authkey="$2"
-    local advertised_routes="$3"
+	local authkey="$2"
+	local advertised_routes="$3"
 	local exit_node_flag="$4"
 	local data_dir="$5"
 	local DOCKER_COMPOSE_FILE="$6"
 	local TEST_MODE="$7"
 	local CONFIRM_MODE="$8"
 	local DUMMY_MODE="$9"
-	local INTERFACES_FILE="${10}"
+	local CONFIG_FILE="${10}"
+	local GITHUB_REPO_VAR="${11}" # Renamed to avoid conflict with global GITHUB_REPO
 
 # The script content generated below uses the local variables above
 cat <<-EOF
 #!/bin/bash
 set -e
+
+# --- User-Friendliness Guard ---
+# Check if the script is being run with the -R flag by mistake.
+if [ "\$1" == "-R" ]; then
+	echo "❌ ERROR: You have run the startup script (tailscale-start.sh) with the -R flag."
+	echo "The -R flag is for re-authenticating and should be used with the main installer script."
+	echo ""
+	echo "To re-authenticate your Tailscale node, please run the following command:"
+	echo "curl -sSL \\"https://raw.githubusercontent.com/${GITHUB_REPO_VAR}/main/install.sh?t=\$(date +%s)\\" | sudo bash -s -- -R"
+	echo ""
+	exit 1
+fi
 
 TEST_MODE=${TEST_MODE}
 CONFIRM_MODE=${CONFIRM_MODE}
@@ -225,8 +215,17 @@ docker_compose_command() {
 	fi
 }
 
+# Source the persistent configuration file to get TS_INTERFACES
+if [ -f "${CONFIG_FILE}" ]; then
+	source "${CONFIG_FILE}"
+fi
+
 # Add NAT rule(s)
-for iface in \$selected_interfaces; do
+OLD_IFS="\$IFS"
+IFS=','
+for iface in \$TS_INTERFACES; do
+	# Trim leading/trailing whitespace from iface
+	iface=\$(echo "\$iface" | xargs)
 	if ! sudo iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE 2>/dev/null; then
 		echo "Creating iptable NAT rule for \$iface..."
 		run_command sudo iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o "\$iface" -j MASQUERADE
@@ -236,19 +235,12 @@ for iface in \$selected_interfaces; do
 	
 	sleep 2
 done
-
-
-# Read selected interfaces from file
-if [ -f "${INTERFACES_FILE}" ]; then
-    selected_interfaces=\$(grep -v '^#' "${INTERFACES_FILE}")
-else
-    selected_interfaces=""
-fi
+IFS="\$OLD_IFS"
 
 # Wait for Docker socket to be available
 echo "Waiting for Docker daemon..."
 while [ ! -S /var/run/docker.sock ]; do
-    sleep 1
+	sleep 1
 done
 echo "Docker daemon is ready."
 
@@ -260,33 +252,117 @@ echo "Waiting for the container to start..."
 container_timeout=60
 container_start_time=\$(date +%s)
 while ! sudo docker ps -q -f name=tailscale | grep -q .; do
-    current_time=\$(date +%s)
-    elapsed_time=\$((current_time - container_start_time))
+	current_time=\$(date +%s)
+	elapsed_time=\$((current_time - container_start_time))
 
-    if [ "\$elapsed_time" -ge "\$container_timeout" ]; then
-        echo "ERROR: Timed out waiting for Tailscale container to start."
-        echo "Please check the container logs for errors: sudo docker logs tailscale"
-        exit 1
-    fi
-    echo "Container not ready, waiting 5 seconds..."
-    sleep 5
+	if [ "\$elapsed_time" -ge "\$container_timeout" ]; then
+		echo "ERROR: Timed out waiting for Tailscale container to start."
+		echo "Please check the container logs for errors: sudo docker logs tailscale"
+		exit 1
+	fi
+	echo "Container not ready, waiting 5 seconds..."
+	sleep 5
 done
 echo "Container started."
 
 # Wait a few seconds for tailscaled to initialize
 sleep 3
-
-# Bring Tailscale online with your auth key and configuration
-run_command sudo docker exec -d tailscale tailscale up \\
-	--authkey="${authkey}" \\
-	--hostname="${hostname}" \\
-	--advertise-routes="${advertised_routes}" \\
-	${exit_node_flag} \\
-	--accept-routes \\
-	--accept-dns \\
-	--reset
 EOF
 }
+
+# --- Command-line flags ---
+TEST_MODE=false    # Test, but doesn't do anything
+CONFIRM_MODE=false # Ask before doing
+DUMMY_MODE=false
+TS_EXIT_NODE_FLAG="true"   # Initialize TS_EXIT_NODE_FLAG
+REAUTH_MODE=false
+
+while getopts "tcdR" opt; do
+	case ${opt} in
+		t) TEST_MODE=true ;;
+		c) CONFIRM_MODE=true ;;
+		d) DUMMY_MODE=true ;;
+		R) REAUTH_MODE=true ;;
+		*) echo "Invalid option: -${OPTARG}" >&2; exit 1 ;;
+	esac
+done
+shift $((OPTIND -1))
+
+# Check for mutually exclusive flags
+if [ "$TEST_MODE" = true ] && [ "$DUMMY_MODE" = true ]; then
+	echo "$ERROR The -t (test) and -d (dummy) flags are mutually exclusive. Please use one or the other."
+	exit 1
+fi
+
+if [ "$REAUTH_MODE" = true ]; then
+	# --- RE-AUTHENTICATION LOGIC ---
+	echo "$INFO Starting Tailscale re-authentication..."
+
+	if [ ! -f "$CONFIG_FILE" ]; then
+		echo "$ERROR Configuration file not found at $CONFIG_FILE."
+		echo "$INFO Cannot re-authenticate. Please run the full installation first."
+		exit 1
+	fi
+
+	source "$CONFIG_FILE"
+	check_and_start_docker
+
+	echo "$INFO Reading existing configuration..."
+	ADVERTISED_ROUTES=""
+	if [ -n "$TS_INTERFACES" ]; then
+		SUBNET_LIST=$(get_available_subnets)
+		OLD_IFS="$IFS"
+		IFS=',' # Set IFS to comma to split TS_INTERFACES
+		for iface in $TS_INTERFACES; do
+			# Trim leading/trailing whitespace from iface
+			iface=$(echo "$iface" | xargs)
+			subnet_line=$(echo "$SUBNET_LIST" | grep -w "$iface")
+			if [ -n "$subnet_line" ]; then
+				subnet=$(echo "$subnet_line" | awk '{print $2}')
+				tailscale_subnet=$(convert_subnet_to_tailscale_format "$subnet")
+				if [ -z "$ADVERTISED_ROUTES" ]; then
+					ADVERTISED_ROUTES="$tailscale_subnet"
+				else
+					ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
+				fi
+			fi
+		done
+		IFS="$OLD_IFS" # Restore original IFS
+	fi
+	echo "$SUCCESS Found hostname: $TS_HOSTNAME"
+	if [ -n "$ADVERTISED_ROUTES" ]; then
+		echo "$SUCCESS Reconstructed advertised routes: $ADVERTISED_ROUTES"
+	fi
+
+	while true; do
+		 read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-auth-'): " TS_AUTHKEY < /dev/tty
+		 if [[ "$TS_AUTHKEY" == tskey-auth-* ]]; then
+			 break
+		 else
+			 echo "$ERROR Invalid format. The Auth Key must start with 'tskey-auth-'."
+		 fi
+	done
+
+
+	if [ -n "$TS_EXIT_NODE_FLAG" ]; then
+		echo "$SUCCESS Exit node flag: $TS_EXIT_NODE_FLAG"
+	else
+		echo "$INFO Exit node not configured."
+	fi
+
+	echo "$INFO Performing re-authentication..."
+	run_command sudo docker exec tailscale tailscale up \
+		--authkey="${TS_AUTHKEY}" \
+		--hostname="${TS_HOSTNAME}" \
+		--advertise-routes="${ADVERTISED_ROUTES}" \
+		${TS_EXIT_NODE_FLAG} \
+		--accept-routes \
+		--accept-dns \
+		--reset &
+
+	echo "$SUCCESS Re-authentication complete! 🎉"
+	exit 0
+fi
 
 # --- Script Start ---
 
@@ -308,10 +384,10 @@ trap 'rm -f "$TEMP_UNINSTALL_SCRIPT"' EXIT
 TEMP_UNINSTALL_SCRIPT=$(mktemp)
 
 if ! curl -sL "$LATEST_UNINSTALL_SCRIPT_URL" -o "$TEMP_UNINSTALL_SCRIPT"; then
-    echo "$WARNING Could not fetch remote uninstall script. Will proceed without updating."
-    REMOTE_VERSION=""
+	echo "$WARNING Could not fetch remote uninstall script. Will proceed without updating."
+	REMOTE_VERSION=""
 else
-    REMOTE_VERSION=$(grep -m 1 '# VERSION:' "$TEMP_UNINSTALL_SCRIPT" | cut -d':' -f2 || true)
+	REMOTE_VERSION=$(grep -m 1 '# VERSION:' "$TEMP_UNINSTALL_SCRIPT" | cut -d':' -f2 || true)
 fi
 
 if [ -z "$REMOTE_VERSION" ]; then
@@ -346,21 +422,24 @@ if [ "$DUMMY_MODE" = true ]; then
 else
 	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME < /dev/tty
 	TS_HOSTNAME=${TS_HOSTNAME:-ts-firewalla}
+	if [ "$TEST_MODE" = true ]; then
+		echo "$INFO Hostname is set to: $TS_HOSTNAME"
+	fi
 
 	while true; do
-		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-'): " TS_AUTHKEY < /dev/tty
+		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-auth-'): " TS_AUTHKEY < /dev/tty
 		if [[ "$TS_AUTHKEY" == tskey-* ]]; then
 			break
 		else
-			echo "$ERROR Invalid format. The Auth Key must start with 'tskey-'."
+			echo "$ERROR Invalid format. The Auth Key must start with 'tskey-auth-'."
 		fi
 	done
 	
 	read -p "$QUESTION Do you want to use this device as a Tailscale exit node? (Y/n): " USE_EXIT_NODE < /dev/tty
- 	if [[ -z "$USE_EXIT_NODE" || "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
+	if [[ -z "$USE_EXIT_NODE" || "$USE_EXIT_NODE" =~ ^[Yy]$ ]]; then
 		TS_EXIT_NODE_FLAG="--advertise-exit-node"
- 		echo "$INFO This device will be configured as an exit node."
- 	else
+		echo "$INFO This device will be configured as an exit node."
+	else
 		TS_EXIT_NODE_FLAG=""
 		echo "$INFO This device will not be configured as an exit node."
 	fi
@@ -369,7 +448,7 @@ fi
 # --- IPv6 Prompt ---
 ENABLE_IPV6="n" # Default to no
 if [ "$DUMMY_MODE" = false ]; then
-    read -p "$QUESTION Do you want to enable IPv6 forwarding for Tailscale? (y/N): " ENABLE_IPV6 < /dev/tty
+	read -p "$QUESTION Do you want to enable IPv6 forwarding for Tailscale? (y/N): " ENABLE_IPV6 < /dev/tty
 fi
 
 # --- Section 1: IP Forwarding ---
@@ -425,7 +504,11 @@ if [ "$DUMMY_MODE" = false ]; then
 				else
 					ADVERTISED_ROUTES="$ADVERTISED_ROUTES,$tailscale_subnet"
 				fi
-				SELECTED_INTERFACES="$SELECTED_INTERFACES $interface"
+				if [ -z "$SELECTED_INTERFACES" ]; then
+					SELECTED_INTERFACES="$interface"
+				else
+					SELECTED_INTERFACES="$SELECTED_INTERFACES,$interface"
+				fi
 				echo "$SUCCESS Subnet $tailscale_subnet will be advertised."
 			else
 				echo "$INFO Subnet $tailscale_subnet will NOT be advertised."
@@ -440,15 +523,18 @@ if [ "$DUMMY_MODE" = false ]; then
 		fi
 	fi
 	
-    # Save selected interfaces to a file for the start script and uninstall script
-    if [ -n "$SELECTED_INTERFACES" ]; then
-        echo "$INFO Saving selected interfaces to $INTERFACES_FILE..."
-        run_command sudo bash -c "echo '# This file contains the network interfaces selected during Tailscale installation.' > '$INTERFACES_FILE'"
-        run_command sudo bash -c "echo '$SELECTED_INTERFACES' >> '$INTERFACES_FILE'"
-        run_command sudo chmod 644 "$INTERFACES_FILE"
-        run_command sudo chown pi:pi "$INTERFACES_FILE"
-        echo "$SUCCESS Selected interfaces saved."
-    fi
+	# Create persistent configuration file
+	echo "$INFO Creating persistent configuration file..."
+	CONFIG_CONTENT="# This file stores persistent configuration for the Tailscale script.\n"
+	CONFIG_CONTENT="${CONFIG_CONTENT}TS_HOSTNAME=\"${TS_HOSTNAME}\"\n"
+	# Note: SELECTED_INTERFACES is a comma-delimited
+	CONFIG_CONTENT="${CONFIG_CONTENT}TS_INTERFACES=\"${SELECTED_INTERFACES}\"\n"
+	CONFIG_CONTENT="${CONFIG_CONTENT}TS_EXIT_NODE_FLAG=\"${TS_EXIT_NODE_FLAG}\"\n"
+
+	run_command sudo bash -c "echo -e '$CONFIG_CONTENT' > '$CONFIG_FILE'"
+	run_command sudo chmod 644 "$CONFIG_FILE"
+	run_command sudo chown pi:pi "$CONFIG_FILE"
+	echo "$SUCCESS Configuration saved to $CONFIG_FILE."
 fi
 
 # --- Section 6: docker-compose.yml ---
@@ -478,7 +564,7 @@ fi
 
 # --- Section 7: Start Script ---
 echo "$INFO Creating and running Tailscale start script..."
-START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXIT_NODE_FLAG}" "${TAILSCALE_DATA_DIR}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}" "${INTERFACES_FILE}")
+START_SCRIPT_CONTENT=$(generate_tailscale_start "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXIT_NODE_FLAG}" "${TAILSCALE_DATA_DIR}" "${DOCKER_COMPOSE_FILE}" "${TEST_MODE}" "${CONFIRM_MODE}" "${DUMMY_MODE}" "${CONFIG_FILE}" "${GITHUB_REPO}")
 
 if [ "$DUMMY_MODE" = true ] || [ "$TEST_MODE" = true ]; then
 	echo "[DEV/TEST MODE] Would create $START_SCRIPT with the following content:"
@@ -496,6 +582,18 @@ else
 			sudo chmod +x "$START_SCRIPT"
 			echo "$SUCCESS Start script created. Running it now..."
 			sudo bash "$START_SCRIPT"
+
+			echo "$INFO Waiting for container to initialize..."
+			sleep 5
+			echo "$INFO Performing one-time authentication..."
+			run_command sudo docker exec tailscale tailscale up \
+				--authkey="${TS_AUTHKEY}" \
+				--hostname="${TS_HOSTNAME}" \
+				--advertise-routes="${ADVERTISED_ROUTES}" \
+				${TS_EXIT_NODE_FLAG} \
+				--accept-routes \
+				--accept-dns \
+				--reset &
 		else
 			echo "Skipping start script creation and execution."
 		fi
@@ -505,6 +603,18 @@ else
 		sudo chmod +x "$START_SCRIPT"
 		echo "$SUCCESS Start script created. Running it now..."
 		sudo bash "$START_SCRIPT"
+
+		echo "$INFO Waiting for container to initialize..."
+		sleep 5
+		echo "$INFO Performing one-time authentication..."
+		run_command sudo docker exec tailscale tailscale up \
+			--authkey="${TS_AUTHKEY}" \
+			--hostname="${TS_HOSTNAME}" \
+			--advertise-routes="${ADVERTISED_ROUTES}" \
+			${TS_EXIT_NODE_FLAG} \
+			--accept-routes \
+			--accept-dns \
+			--reset &
 	fi
 fi
 
@@ -516,6 +626,8 @@ echo "$SUCCESS Tailscale installation is complete! 🎉"
 echo ""
 echo "$INFO The Tailscale node on your Firewalla has been pre-authenticated with the key you provided."
 echo "$INFO It should appear in your Tailscale admin console shortly."
+echo "$INFO To approve your machine, visit (as admin):"
+echo "$INFO 	https://login.tailscale.com/admin"
 echo ""
 echo "$WARNING IMPORTANT: Authorize Subnet Routes"
 echo "1. Go to your Tailscale Admin Console: https://login.tailscale.com/admin/machines"
