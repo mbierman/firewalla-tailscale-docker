@@ -6,21 +6,21 @@
 <br>
 
 ## Table of Contents
-* [Why Use This?](#why-use-this)
+* [Why Use This?](#-why-use-this)
 * [Features](#features)
 * [Preparation](#preparation)
 * [Installation](#installation)
-* [Re-authentication](#re-authentication)
-* [Advanced Installation](#advanced-installation)
+* [Re-authentication](#-re-authentication)
+* [Advanced Installation](#-advanced-installation)
 * [Exit Node](#exit-node)
-* [How It Works](#how-it-works)
-* [More Use Cases](#more-use-cases)
+* [How It Works](#-how-it-works)
+* [More Use Cases](#-more-use-cases)
 * [Uninstallation](#uninstallation)
 * [References](#references)
 * [License](#license)
 
  
-## ❓ Why Use This?
+## ❓Why Use This?
 
 Firewalla already provides an excellent, no-subscription [VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server) and [VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client). So, why add Tailscale?
 
