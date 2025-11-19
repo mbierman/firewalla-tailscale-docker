@@ -158,7 +158,7 @@ curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 
 The script will then ask for your new key and re-authenticate the node.
 
-## 📱Exit Node
+## 📱 Exit Node
 If you use the default configured for exit node, you will be able to enable or disable the "full tunnel" on the client meaning you can decide if internet traffic goes over your Firewalla or not when you are connected to Tailscale. 
 
 You can also use at as a VPN without access to your local Firewalla networks! 
