@@ -7,16 +7,16 @@
 
 ## Table of Contents
 * [Why Use This?](#-why-use-this)
-* [Features](#features)
-* [Preparation](#preparation)
-* [Installation](#installation)
+* [Features](#-features)
+* [Preparation](#-preparation)
+* [Installation](#-installation)
 * [Re-authentication](#-re-authentication)
 * [Advanced Installation](#-advanced-installation)
-* [Exit Node](#exit-node)
+* [Exit Node](#-exit-node)
 * [How It Works](#-how-it-works)
 * [More Use Cases](#-more-use-cases)
-* [Uninstallation](#uninstallation)
-* [References](#references)
+* [Uninstallation](#-uninstallation)
+* [References](#-references)
 * [License](#license)
 
  
