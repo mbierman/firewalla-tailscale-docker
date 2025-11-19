@@ -143,7 +143,7 @@ You will enter the tailsale key and the container will be updated.
 
 Note, for security, the TS key is not saved in the docker-compose.yml or the startup script. 
 
-### Advanced Installation
+### 😎 Advanced Installation
 
 The `install.sh` script supports flags for more controlled execution:
 *   **Test Mode (`-t`):** A "dry run" that shows what the script will do without making changes.
