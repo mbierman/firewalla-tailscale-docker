@@ -17,7 +17,7 @@
 * [More Use Cases](#-more-use-cases)
 * [Uninstallation](#-uninstallation)
 * [References](#-references)
-* [License](#license)
+* [License](#-license)
 
  
 ## ❓ Why Use This?
