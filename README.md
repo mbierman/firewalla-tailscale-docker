@@ -15,7 +15,7 @@
 * [Exit Node](#-exit-node)
 * [How It Works](#-how-it-works)
 * [More Use Cases](#-more-use-cases)
-* [Uninstallation](#uninstallation)
+* [Uninstallation](#-uninstallation)
 * [References](#-references)
 * [License](#-license)
 
