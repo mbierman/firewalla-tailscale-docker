@@ -15,7 +15,7 @@
 * [Exit Node](#-exit-node)
 * [How It Works](#-how-it-works)
 * [More Use Cases](#-more-use-cases)
-* [Uninstallation](#-uninstallation)
+* [Uninstallation](#uninstallation)
 * [References](#-references)
 * [License](#-license)
 
@@ -183,6 +183,7 @@ Although solving access for CGNAT was my original inspiration, Tailscale has a l
 * Make one device (e.g. your Firewalla)the “way out to the internet” for others, or keep everyone minding their own business.
 * Turn access on or off from your phone like you’re flipping light switches.
 
+<a name="uninstallation"></a>
 ## 🗑️ Uninstallation
 
 To completely remove this Tailscale setup from your Firewalla, SSH in and run the following command:
