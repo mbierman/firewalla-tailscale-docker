@@ -6,7 +6,7 @@
 <br>
 
 ## Table of Contents
-* [Why Use This?](#-why-use-this)
+* [Why?](#-why)
 * [Features](#-features)
 * [Preparation](#-preparation)
 * [Installation](#-installation)
@@ -20,7 +20,7 @@
 * [License](#-license)
 
  
-## ❓ Why Use This?
+## ❓ Why?
 
 Firewalla already provides an excellent, no-subscription [VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server) and [VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client). So, why add Tailscale?
 
