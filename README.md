@@ -203,7 +203,7 @@ sudo /data/tailscale-uninstall.sh
 
 ## 📄 License
 
-## Todos Planned
+## ✅ Todos Planned
 I will add a way to easily update the docker container without losing any configuration in a future update. 
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
