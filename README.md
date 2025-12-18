@@ -89,7 +89,7 @@ curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 ```
 
 You will be prompted for the following information:
-1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`).
+1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`). Hostnames generally do not allow underscores (`_`). Use hyphens (`-`) instead.
 2.  **Tailscale Auth Key:** Paste the key you generated in the previous step.
 3.  **Exit Node:** Choose `y` if you want to route all Internet traffic through your Firewalla when you are away from home.
 4.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
@@ -113,7 +113,7 @@ After the script finishes, you must authorize the new device and its routes.
 4.  **Configure DNS (Recommended):** To resolve local hostnames, go to the [DNS page](https://login.tailscale.com/admin/dns) in your Tailscale console.
 	* Add a new **Nameserver**.
 	* Set the IP address to your Firewalla's LAN IP (e.g., `192.168.x.1`).
-	* Enable **Restrict to search domain** and add the subnets you are advertising.
+	* To use this Nameserver for specific local domains (Split DNS): **Enable "Restrict to search domain"** and enter your local domain (e.g., `lan`, `home.arpa`). This directs DNS queries for that domain to your Firewalla.
 	* Enable **Override local DNS**.
 	* Configure **Global nameservers** If you are going to use the Firewalla to access the internet (e..g exit-node or "full tunnel" VPN) you can set DNS (you can use any; NextDNS and ControlD DoH are also supported)
  <p>

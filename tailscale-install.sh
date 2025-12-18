@@ -278,15 +278,14 @@ CONFIRM_MODE=false # Ask before doing
 DUMMY_MODE=false
 TS_EXIT_NODE_FLAG="true"   # Initialize TS_EXIT_NODE_FLAG
 REAUTH_MODE=false
-UPDATE_MODE=false
 
-while getopts "tcdRu" opt; do
+while getopts "tcdR" opt; do
 	case ${opt} in
 		t) TEST_MODE=true ;;
 		c) CONFIRM_MODE=true ;;
 		d) DUMMY_MODE=true ;;
 		R) REAUTH_MODE=true ;;
-		u) UPDATE_MODE=true ;;
+		U) REAUTH_MODE=true ;;
 		*) echo "Invalid option: -${OPTARG}" >&2; exit 1 ;;
 	esac
 done
@@ -296,39 +295,6 @@ shift $((OPTIND -1))
 if [ "$TEST_MODE" = true ] && [ "$DUMMY_MODE" = true ]; then
 	echo "$ERROR The -t (test) and -d (dummy) flags are mutually exclusive. Please use one or the other."
 	exit 1
-fi
-
-if [ "$UPDATE_MODE" = true ]; then
-	# --- UPDATE LOGIC ---
-	echo "$INFO Starting Tailscale container update check..."
-
-	if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
-		echo "$ERROR Docker compose file not found at $DOCKER_COMPOSE_FILE."
-		echo "$INFO Cannot update. Please run the full installation first."
-		exit 1
-	fi
-
-	check_and_start_docker
-
-	echo "$INFO Checking for a newer version of the Tailscale image..."
-	# Get the image ID before pulling
-	BEFORE_ID=$(sudo docker images --format "{{.ID}}" tailscale/tailscale:latest 2>/dev/null || echo "notfound")
-
-	# Pull the latest image
-	docker_compose_command -f "$DOCKER_COMPOSE_FILE" pull
-
-	# Get the image ID after pulling
-	AFTER_ID=$(sudo docker images --format "{{.ID}}" tailscale/tailscale:latest 2>/dev/null || echo "notfound")
-	
-	if [ "$BEFORE_ID" == "$AFTER_ID" ]; then
-		echo "$SUCCESS Tailscale is already up to date. No action needed."
-	else
-		echo "$INFO New image downloaded. Applying update..."
-		docker_compose_command -f "$DOCKER_COMPOSE_FILE" up -d
-		echo "$SUCCESS Container has been updated successfully!"
-	fi
-
-	exit 0
 fi
 
 if [ "$REAUTH_MODE" = true ]; then
@@ -452,31 +418,31 @@ echo "$SUCCESS Directories created."
 # --- Section 4: User Input ---
 if [ "$DUMMY_MODE" = true ]; then
 	echo "[DEV MODE] Skipping user input and using dummy data."
-	TS_HOSTNAME="ts-firewalla-test"
+	TS_HOSTNAME="ts-firewalla"
 	TS_AUTHKEY="tskey-test-key"
 	TS_EXTRA_ARGS=""
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
-	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
-	TS_HOSTNAME=${TS_HOSTNAME_INPUT:-ts-firewalla}
+read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
+TS_HOSTNAME=${TS_HOSTNAME_INPUT:-ts-firewalla}
 
-	# --- New Validation Loop ---
-	while [[ "$TS_HOSTNAME" =~ "_" ]]; do
-	    echo "$ERROR Hostname '$TS_HOSTNAME' contains an invalid character (_)."
-	    read -p "$QUESTION Please enter a hostname without underscores: " TS_HOSTNAME_RETRY < /dev/tty
+# --- New Validation Loop ---
+while [[ "$TS_HOSTNAME" =~ "_" ]]; do
+    echo "$ERROR Hostname '$TS_HOSTNAME' contains an invalid character (_)."
+    read -p "$QUESTION Please enter a hostname without underscores: " TS_HOSTNAME_RETRY < /dev/tty
     
-	    # Use the retry value, falling back to the default if the retry is empty
-	    if [ -z "$TS_HOSTNAME_RETRY" ]; then
-	        TS_HOSTNAME="ts-firewalla"
-	    else
-	        TS_HOSTNAME="$TS_HOSTNAME_RETRY"
-	    fi  
-	done
-	# --- End of Validation Loop ---
+    # Use the retry value, falling back to the default if the retry is empty
+    if [ -z "$TS_HOSTNAME_RETRY" ]; then
+        TS_HOSTNAME="ts-firewalla"
+    else
+        TS_HOSTNAME="$TS_HOSTNAME_RETRY"
+    fi
+done
+# --- End of Validation Loop ---
 
-	if [ "$TEST_MODE" = true ]; then
-	    echo "$INFO Hostname is set to: $TS_HOSTNAME"
-	fi
+if [ "$TEST_MODE" = true ]; then
+    echo "$INFO Hostname is set to: $TS_HOSTNAME"
+fi
 
 	while true; do
 		read -p "$QUESTION Enter your Tailscale Auth Key (must start with 'tskey-auth-'): " TS_AUTHKEY < /dev/tty
@@ -693,3 +659,4 @@ echo "$INFO For more detailed setup instructions, please visit the project's Git
 echo ""
 echo "$INFO You can run the uninstaller later with: sudo $UNINSTALL_SCRIPT"
 echo ""
+
