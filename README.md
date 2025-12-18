@@ -6,7 +6,7 @@
 <br>
 
 ## Table of Contents
-* [Why Use This?](#-why-use-this)
+* [Why?](#-why)
 * [Features](#-features)
 * [Preparation](#-preparation)
 * [Installation](#-installation)
@@ -18,9 +18,10 @@
 * [Uninstallation](#uninstallation)
 * [References](#-references)
 * [License](#-license)
+* [Todos Planned](#-Todos-Planned)
 
  
-## ❓ Why Use This?
+## ❓ Why?
 
 Firewalla already provides an excellent, no-subscription [VPN Server](https://help.firewalla.com/hc/en-us/articles/115004274633-Firewalla-VPN-Server) and [VPN Client](https://help.firewalla.com/hc/en-us/articles/360023379953-VPN-Client). So, why add Tailscale?
 
@@ -201,8 +202,11 @@ sudo /data/tailscale-uninstall.sh
 *   [Reddit: Easy Tailscale integration via docker compose](https://www.reddit.com/r/firewalla/comments/1mlrtvi/easy_tailscale_integration_via_docker_compose/) (Credit to u/adrianmihalko for the original concept)
 
 ## 📄 License
-
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## ✅ Todos Planned
+I will add a way to easily update the docker container without losing any configuration in a future update. 
+
 
 ---
 <p>
