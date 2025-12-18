@@ -1,5 +1,5 @@
 #!/bin/bash
-# VERSION:1.3.1
+# VERSION:1.4.0
 set -e
 set -o pipefail
 
@@ -8,7 +8,7 @@ INFO="ℹ️"
 SUCCESS="✅"
 WARNING="⚠️"
 ERROR="❌"
-VERSION="1.3.0"
+VERSION="1.4.0"
 
 # --- Command-line flags ---
 TEST_MODE=false

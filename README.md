@@ -10,6 +10,7 @@
 * [Features](#-features)
 * [Preparation](#-preparation)
 * [Installation](#-installation)
+* [Updating](#-updating)
 * [Re-authentication](#-re-authentication)
 * [Advanced Installation](#-advanced-installation)
 * [Exit Node](#-exit-node)
@@ -128,7 +129,15 @@ After the script finishes, you must authorize the new device and its routes.
 Your Firewalla is now a fully functional part of your Tailnet!
 
 
-## 🔄 Re-authentication
+## 🔄 Updating
+
+To check for and install updates to the Tailscale Docker container, you can use the `-u` flag. This will pull the latest Docker image and restart the container only if a new version is available.
+
+```bash
+curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker/main/install.sh?t=$(date +%s)" | sudo bash -s -- -u
+```
+
+## 🔑 Re-authentication
 
 In some cases, you may need to re-authenticate your Firewalla node with Tailscale. This can happen if you manually revoke the node from the Tailscale admin console or if the Auth key expires.
 
@@ -147,8 +156,10 @@ Note, for security, the TS key is not saved in the docker-compose.yml or the sta
 ### 😎 Advanced Installation
 
 The `install.sh` script supports flags for more controlled execution:
+*   **Update Mode (`-u`):** Checks for a new Docker image and updates the container if one is found.
 *   **Test Mode (`-t`):** A "dry run" that shows what the script will do without making changes.
 *   **Confirm Mode (`-c`):** Prompts for approval before executing each.
+*   **Re-authentication Mode (`-R`):** Re-authenticates an existing node.
 
 To use them, append the flag to the end of the installation command:
 ```bash
@@ -203,11 +214,6 @@ sudo /data/tailscale-uninstall.sh
 
 ## 📄 License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-## ✅ Todos Planned
-I will add a way to easily update the docker container without losing any configuration in a future update. 
-
-
 ---
 <p>
   Made with 🔥 and ❤️ for the Firewalla Community!
