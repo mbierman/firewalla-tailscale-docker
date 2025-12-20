@@ -51,7 +51,10 @@ Tailscale offers a generous [free tier](https://tailscale.com/pricing) for perso
 *   **Persistent Operation:** Installs a start script (`/home/pi/.firewalla/config/post_main.d/tailscale-start.sh`) that ensures Tailscale automatically starts after reboots and Firewalla updates.
 *   **Clean Uninstallation:** A separate script to remove all traces of the Tailscale Docker setup.
 *   **Minimal Impact:** Designed to integrate seamlessly with Firewalla's existing Docker environment without interference.
-*   **Auth token update:** You can update an expired token.  
+*   **Auth token update:** You can update an expired token.
+*   **Container Health Checks:** Docker health checks are configured to monitor the Tailscale container's status, ensuring it's running correctly.
+*   **Efficient Logging:** Configured Docker logging with a `json-file` driver, `max-size` of `5mb`, and `max-file` of `3` to prevent log bloat.
+*   **Resource Management:** Docker deploy limits are set to restrict the container's memory usage to `256M`, preventing excessive resource consumption.  
 
 
 ## 📝 Preparation
