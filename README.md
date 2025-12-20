@@ -95,9 +95,10 @@ curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 
 You will be prompted for the following information:
 1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`). Hostnames are validated against Tailscale's rules to ensure compatibility and proper functionality. Specifically:
+    *   **Must be lowercase.** Tailscale requires hostnames to be in lowercase. The script will automatically convert any input to lowercase.
     *   **No Spaces:** E.g., `Firewalla Gold` is invalid; use `Firewalla-Gold`.
     *   **No Underscores:** E.g., `Firewalla_Gold` is invalid; use `Firewalla-Gold`.
-    *   **No Special Characters:** Avoid `! @ # $ % ^ & * ( ) + = ~` etc. Only letters (a-z, A-Z), numbers (0-9), and hyphens (-) are allowed.
+    *   **No Special Characters:** Avoid `! @ # $ % ^ & * ( ) + = ~` etc. Only letters (a-z), numbers (0-9), and hyphens (-) are allowed.
     *   **No Punctuation:** No periods (`.`), commas (`,`), or slashes (`/`).
     *   **No Emojis/Unicode:** Only ASCII characters are allowed.
     *   **Cannot start or end with a hyphen.**

@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 set -e
 set -o pipefail
 
@@ -519,11 +518,15 @@ if [ "$DUMMY_MODE" = true ]; then
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
 	while true; do
-		read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
+		read -p "$QUESTION Enter a lowercase hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
 		TS_HOSTNAME=${TS_HOSTNAME_INPUT:-ts-firewalla}
+		
+		# Ensure the hostname is lowercase
+		TS_HOSTNAME=$(echo "$TS_HOSTNAME" | tr '[:upper:]' '[:lower:]')
 
 		if validate_hostname "$TS_HOSTNAME"; then
 			echo "$SUCCESS Hostname '$TS_HOSTNAME' is valid."
+			echo "$INFO Final hostname being used: $TS_HOSTNAME"
 			break # Exit loop if hostname is valid
 		else
 			# The function already printed the specific error
