@@ -288,6 +288,52 @@ sleep 3
 EOF
 }
 
+# Function to validate hostname, providing specific error messages
+validate_hostname() {
+    local hostname="$1"
+    
+    # Rule 1: Cannot be empty
+    if [ -z "$hostname" ]; then
+        echo "$ERROR Hostname cannot be empty."
+        return 1
+    fi
+
+    # Rule 2: No spaces
+    if [[ "$hostname" =~ " " ]]; then
+        echo "$ERROR Hostname '$hostname' is invalid: Spaces are not allowed. Use a hyphen '-' instead."
+        return 1
+    fi
+
+    # Rule 3: No underscores
+    if [[ "$hostname" =~ "_" ]]; then
+        echo "$ERROR Hostname '$hostname' is invalid: Underscores '_' are not allowed. Use a hyphen '-' instead."
+        return 1
+    fi
+
+    # Rule 4: No special characters or punctuation (excluding hyphens)
+    if [[ "$hostname" =~ [^a-zA-Z0-9\-] ]]; then
+        echo "$ERROR Hostname '$hostname' is invalid: Contains special characters or punctuation."
+        echo "$INFO Only letters (a-z, A-Z), numbers (0-9), and hyphens (-) are allowed."
+        return 1
+    fi
+
+    # Rule 5: Cannot start or end with a hyphen
+    if [[ "$hostname" == -* ]] || [[ "$hostname" == *- ]]; then
+        echo "$ERROR Hostname '$hostname' is invalid: Cannot start or end with a hyphen."
+        return 1
+    fi
+
+    # Rule 6: No Emojis/Unicode (Only ASCII)
+    # Use grep with Perl-compatible regex to find any non-ASCII characters.
+    if echo "$hostname" | grep -qP '[^\x00-\x7F]'; then
+        echo "$ERROR Hostname '$hostname' is invalid: Contains Emojis or other non-ASCII characters."
+        echo "$INFO Only standard ASCII characters are permitted."
+        return 1
+    fi
+
+    return 0 # All checks passed, hostname is valid
+}
+
 # --- Command-line flags ---
 TEST_MODE=false    # Test, but doesn't do anything
 CONFIRM_MODE=false # Ask before doing
@@ -472,22 +518,18 @@ if [ "$DUMMY_MODE" = true ]; then
 	TS_AUTHKEY="tskey-test-key"
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
-	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
-	TS_HOSTNAME=${TS_HOSTNAME_INPUT:-ts-firewalla}
+	while true; do
+		read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
+		TS_HOSTNAME=${TS_HOSTNAME_INPUT:-ts-firewalla}
 
-	# --- New Validation Loop ---
-	while [[ "$TS_HOSTNAME" =~ "_" ]]; do
-	    echo "$ERROR Hostname '$TS_HOSTNAME' contains an invalid character (_)."
-	    read -p "$QUESTION Please enter a hostname without underscores: " TS_HOSTNAME_RETRY < /dev/tty
-    
-	    # Use the retry value, falling back to the default if the retry is empty
-	    if [ -z "$TS_HOSTNAME_RETRY" ]; then
-	        TS_HOSTNAME="ts-firewalla"
-	    else
-	        TS_HOSTNAME="$TS_HOSTNAME_RETRY"
-	    fi  
+		if validate_hostname "$TS_HOSTNAME"; then
+			echo "$SUCCESS Hostname '$TS_HOSTNAME' is valid."
+			break # Exit loop if hostname is valid
+		else
+			# The function already printed the specific error
+			echo "$INFO Please try again."
+		fi
 	done
-	# --- End of Validation Loop ---
 
 	if [ "$TEST_MODE" = true ]; then
 	    echo "$INFO Hostname is set to: $TS_HOSTNAME"

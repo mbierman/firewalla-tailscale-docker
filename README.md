@@ -94,7 +94,13 @@ curl -sSL "https://raw.githubusercontent.com/mbierman/firewalla-tailscale-docker
 ```
 
 You will be prompted for the following information:
-1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`). Hostnames generally do not allow underscores (`_`). Use hyphens (`-`) instead.
+1.  **Hostname:** A name for your Firewalla on the Tailscale network (e.g., `ts-firewalla`). Hostnames are validated against Tailscale's rules to ensure compatibility and proper functionality. Specifically:
+    *   **No Spaces:** E.g., `Firewalla Gold` is invalid; use `Firewalla-Gold`.
+    *   **No Underscores:** E.g., `Firewalla_Gold` is invalid; use `Firewalla-Gold`.
+    *   **No Special Characters:** Avoid `! @ # $ % ^ & * ( ) + = ~` etc. Only letters (a-z, A-Z), numbers (0-9), and hyphens (-) are allowed.
+    *   **No Punctuation:** No periods (`.`), commas (`,`), or slashes (`/`).
+    *   **No Emojis/Unicode:** Only ASCII characters are allowed.
+    *   **Cannot start or end with a hyphen.**
 2.  **Tailscale Auth Key:** Paste the key you generated in the previous step.
 3.  **Exit Node:** Choose `y` if you want to route all Internet traffic through your Firewalla when you are away from home.
 4.  **IPv6 Forwarding:** Choose `y` if you want to enable IPv6 forwarding for your Tailscale node. (Default: `n`)
