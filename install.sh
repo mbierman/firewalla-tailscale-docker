@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 set -e
 set -o pipefail
 
@@ -146,7 +147,22 @@ services:
     volumes:
       - ${TAILSCALE_DATA_DIR}:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5mb"
+        max-file: "3"
     command: tailscaled --tun=userspace-networking
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 EOF
 }
 
@@ -454,7 +470,6 @@ if [ "$DUMMY_MODE" = true ]; then
 	echo "[DEV MODE] Skipping user input and using dummy data."
 	TS_HOSTNAME="ts-firewalla-test"
 	TS_AUTHKEY="tskey-test-key"
-	TS_EXTRA_ARGS=""
 	ADVERTISED_ROUTES="192.168.0.0/24"
 else
 	read -p "$QUESTION Enter a hostname for this Tailscale node [ts-firewalla]: " TS_HOSTNAME_INPUT < /dev/tty
@@ -514,6 +529,9 @@ if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
 else
 	# Build the sysctl configuration content
 	SYSCTL_CONTENT="net.ipv4.ip_forward=1"
+	# Add buffer size optimizations for WireGuard/Tailscale performance
+	SYSCTL_CONTENT="${SYSCTL_CONTENT}\nnet.core.rmem_max=2500000"
+	SYSCTL_CONTENT="${SYSCTL_CONTENT}\nnet.core.wmem_max=2500000"
 	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
 		SYSCTL_CONTENT="${SYSCTL_CONTENT}\nnet.ipv6.conf.all.forwarding=1"
 		echo "$INFO IPv6 forwarding has been enabled."
@@ -593,12 +611,12 @@ fi
 echo "$INFO Creating docker-compose.yml file..."
 if [ "$DUMMY_MODE" = true ]; then
 	echo "[DEV MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
-	generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}"
+	generate_docker_compose_yml
 elif [ "$TEST_MODE" = true ]; then
 	echo "[TEST MODE] Would create $DOCKER_COMPOSE_FILE with the following content:"
-	generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}"
+	generate_docker_compose_yml
 elif [ "$CONFIRM_MODE" = true ]; then
-	COMPOSE_CONTENT=$(generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}")
+	COMPOSE_CONTENT=$(generate_docker_compose_yml)
 	echo "The following docker-compose.yml will be created:"
 	echo "${COMPOSE_CONTENT}"
 	read -p "Create this file? [y/N] " -n 1 -r
@@ -610,7 +628,7 @@ elif [ "$CONFIRM_MODE" = true ]; then
 		echo "Skipping docker-compose.yml creation."
 	fi
 else
-	generate_docker_compose_yml "${TS_HOSTNAME}" "${TS_AUTHKEY}" "${ADVERTISED_ROUTES}" "${TS_EXTRA_ARGS}" "${TAILSCALE_DATA_DIR}" | sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null
+	generate_docker_compose_yml | sudo tee "$DOCKER_COMPOSE_FILE" > /dev/null
 	echo "$SUCCESS docker-compose.yml created."
 fi
 
