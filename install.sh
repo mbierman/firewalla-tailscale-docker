@@ -567,9 +567,11 @@ fi
 echo "$INFO Configuring persistent IP forwarding..."
 if [ "$TEST_MODE" = true ] || [ "$CONFIRM_MODE" = true ]; then
 	run_command echo "Write 'net.ipv4.ip_forward=1' to $SYSCTL_CONF_FILE"
-	if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
-		run_command echo "Write 'net.ipv6.conf.all.forwarding=1' to $SYSCTL_CONF_FILE"
-	fi
+     if [[ "$ENABLE_IPV6" =~ ^[Yy]$ ]]; then
+          run_command echo "Write 'net.ipv6.conf.all.forwarding=1' to $SYSCTL_CONF_FILE"
+          run_command echo "Write 'net.core.rmem_max=2500000' to $SYSCTL_CONF_FILE"
+          run_command echo "Write 'net.core.wmem_max=2500000' to $SYSCTL_CONF_FILE"
+     fi  
 	run_command sudo sysctl -p "$SYSCTL_CONF_FILE"
 else
 	# Build the sysctl configuration content
