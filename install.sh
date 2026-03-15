@@ -132,7 +132,19 @@ get_available_subnets() {
 
 # Function to generate docker-compose.yml
 generate_docker_compose_yml() {
-cat <<-EOF
+# Firewalla Purple still ships an older version of docker-compose that
+# doesn't support the start_period key or the deploy block...
+local COMPOSE_VER=$(docker-compose version --short 2>/dev/null || docker compose version --short 2>/dev/null)
+
+# Extract the major/minor version (e.g., "1.29" or "2.10")
+local SUPPORT_ADVANCED=false
+if [[ $(echo "$COMPOSE_VER" | cut -d. -f1) -ge 2 ]]; then
+    SUPPORT_ADVANCED=true
+elif [[ $(echo "$COMPOSE_VER" | cut -d. -f1) -eq 1 ]] && [[ $(echo "$COMPOSE_VER" | cut -d. -f2) -ge 28 ]]; then
+    SUPPORT_ADVANCED=true
+fi
+
+local yaml=$(cat <<EOF
 version: "3.3"
 services:
   tailscale:
@@ -157,12 +169,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+EOF
+)
+
+if [ "$SUPPORT_ADVANCED" = true ]; then
+    yaml += "      start_period: 30s
     deploy:
       resources:
         limits:
           memory: 256M
-EOF
+"
+fi
+
+echo "$yaml"
 }
 
 # Function to generate tailscale-start.sh content
