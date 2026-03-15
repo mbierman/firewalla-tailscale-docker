@@ -133,7 +133,7 @@ get_available_subnets() {
 # Function to generate docker-compose.yml
 generate_docker_compose_yml() {
 cat <<-EOF
-version: "3.3"
+version: "3.4"
 services:
   tailscale:
     container_name: tailscale
