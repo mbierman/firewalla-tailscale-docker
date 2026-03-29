@@ -127,7 +127,7 @@ convert_subnet_to_tailscale_format() {
 
 # Function to get available subnets from bridge interfaces
 get_available_subnets() {
-	ip -o -f inet addr show | grep -E ': br[0-9]+' | awk '{print $2, $4}' | sort -k 2 -V
+	ip -o -f inet addr show | grep -E ': br|bond[0-9]+' | awk '{print $2, $4}' | sort -k 2 -V
 }
 
 # Function to generate docker-compose.yml
